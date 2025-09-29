@@ -1,32 +1,41 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Login.css';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { showNotification } = useNotification();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulação de chamada de API
+    setLoading(true);
     try {
-      // const response = await api.post('/login', { email, password });
-      // if (response.data.token) {
-      //   localStorage.setItem('token', response.data.token);
-      //   navigate('/dashboard');
-      // }
-      console.log('Login attempt with:', { email, password });
-      // Simulação de erro
-      if (email !== 'teste@teste.com' || password !== 'Senha123!') {
-        setError('Usuário ou senha inválidos.');
-        return;
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, senha: password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        showNotification('Login realizado com sucesso!', 'success');
+        navigate('/dashboard');
+      } else {
+        showNotification(data.message || 'Erro ao fazer login.', 'error');
       }
-      navigate('/dashboard');
     } catch (err) {
-      setError('Ocorreu um erro ao tentar fazer login.');
+      showNotification('Ocorreu um erro ao tentar fazer login.', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,13 +49,13 @@ const Login: React.FC = () => {
       <div className="auth-main">
         <form className="auth-form" onSubmit={handleSubmit}>
           <h2>Login</h2>
-          {error && <p className="error-message">{error}</p>}
           <input
             type="email"
             placeholder="E-mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
           <div className="password-container">
             <input
@@ -55,16 +64,19 @@ const Login: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
             />
             <button
               type="button"
               className="password-toggle"
               onClick={() => setShowPassword(!showPassword)}
+              disabled={loading}
             >
               {showPassword ? '🙈' : '👁️'}
             </button>
           </div>
-          <button type="submit">Entrar</button>
+          <button type="submit" disabled={loading}>Entrar</button>
+          {loading && <p>Entrando...</p>}
           <Link className="auth-link" to="/recuperar-senha">
             Esqueceu sua senha?
           </Link>
@@ -75,6 +87,4 @@ const Login: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default Login;
+};export default Login;

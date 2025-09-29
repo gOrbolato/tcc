@@ -31,7 +31,16 @@ const Home: React.FC = () => {
               <h3>Guilherme Orbolato</h3>
               <p>Desenvolvedor</p>
             </div>
-            {/* Adicione mais cards de criadores aqui */}
+            <div className="creator-card">
+              <img src="https://via.placeholder.com/120" alt="Foto do criador" />
+              <h3>Outro Criador 1</h3>
+              <p>Designer</p>
+            </div>
+            <div className="creator-card">
+              <img src="https://via.placeholder.com/120" alt="Foto do criador" />
+              <h3>Outro Criador 2</h3>
+              <p>Analista</p>
+            </div>
           </div>
         </section>
       </main>

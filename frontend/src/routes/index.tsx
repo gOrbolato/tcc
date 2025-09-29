@@ -7,6 +7,8 @@ import Dashboard from '../pages/Dashboard';
 import Perfil from '../pages/Perfil';
 import Avaliacao from '../pages/Avaliacao';
 import AdminDashboard from '../pages/AdminDashboard';
+import AdminUserManagement from '../pages/AdminUserManagement';
+import InstitutionCourseManagement from '../pages/InstitutionCourseManagement';
 
 const router = createBrowserRouter([
   {
@@ -40,6 +42,14 @@ const router = createBrowserRouter([
   {
     path: '/admin',
     element: <AdminDashboard />,
+  },
+  {
+    path: '/admin/users',
+    element: <AdminUserManagement />,
+  },
+  {
+    path: '/admin/institutions-courses',
+    element: <InstitutionCourseManagement />,
   },
 ]);
 

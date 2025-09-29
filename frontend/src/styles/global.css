@@ -75,3 +75,18 @@ button {
   cursor: pointer;
   border-radius: 5px;
 }
+
+input, select, textarea {
+  padding: 0.8rem;
+  border: 1px solid var(--gray);
+  border-radius: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
