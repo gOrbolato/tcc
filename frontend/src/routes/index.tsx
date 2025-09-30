@@ -1,13 +1,13 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Home from '../pages/Home';
-import Login from '../pages/auth/Login';
-import Registro from '../pages/auth/Registro';
-import RecuperarSenha from '../pages/auth/RecuperarSenha';
-import Dashboard from '../pages/user/Dashboard';
-import Perfil from '../pages/user/Perfil';
-import Avaliacao from '../pages/user/Avaliacao';
-import AdminDashboard from '../pages/admin/AdminDashboard';
+import Home from '../pages/Home.tsx';
+import Login from '../pages/auth/Login.tsx';
+import Registro from '../pages/auth/Registro.tsx';
+import RecuperarSenha from '../pages/auth/RecuperarSenha.tsx';
+import Dashboard from '../pages/user/Dashboard.tsx';
+import Perfil from '../pages/user/Perfil.tsx';
+import Avaliacao from '../pages/user/Avaliacao.tsx';
+import AdminDashboard from '../pages/admin/AdminDashboard.tsx';
 
 const AppRoutes: React.FC = () => {
   return (

@@ -1,5 +1,5 @@
 import pool from '../config/database';
-import { OkPacket } from 'mysql2';
+import { OkPacket, RowDataPacket } from 'mysql2';
 
 export const submitEvaluation = async (userId: number, evaluationData: any) => {
   const {

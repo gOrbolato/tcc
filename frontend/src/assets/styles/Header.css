@@ -1,0 +1,102 @@
+/* src/assets/styles/Header.css */
+.header {
+  background-color: #ffffff;
+  color: #333;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  flex-wrap: wrap;
+}
+
+.header-logo {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #2c3e50;
+  text-decoration: none;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.header-nav .nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.header-nav a,
+.header-nav .nav-button {
+  color: #555;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.header-nav a:hover {
+  color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.header-nav .auth-buttons {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.header-nav .auth-buttons .login-button {
+  background-color: transparent;
+  border: 1px solid #007bff;
+  color: #007bff;
+}
+
+.header-nav .auth-buttons .login-button:hover {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.header-nav .auth-buttons .register-button {
+  background-color: #007bff;
+  color: #fff;
+  border: 1px solid #007bff;
+}
+
+.header-nav .auth-buttons .register-button:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.header-nav .user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.header-nav .user-info .logout-button {
+  background-color: #dc3545;
+  color: white;
+  border-radius: 6px;
+  padding: 8px 12px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.header-nav .user-info .logout-button:hover {
+  background-color: #c82333;
+}
