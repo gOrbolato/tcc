@@ -1,9 +1,10 @@
 import React from 'react';
+import '../assets/styles/App.css';
 
 const Footer: React.FC = () => {
   return (
-    <footer>
-      <p>&copy; 2025 Avaliação Educacional. Site acadêmico.</p>
+    <footer className="footer">
+      <p>&copy; 2024 Avaliação Educacional. Este é um site acadêmico.</p>
     </footer>
   );
 };

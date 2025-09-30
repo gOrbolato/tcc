@@ -1,70 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { useNotification } from '../contexts/NotificationContext';
+import '../assets/styles/App.css';
 
 const CookieConsent: React.FC = () => {
-  const [show, setShow] = useState(false);
-  const { showNotification } = useNotification();
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem('cookie-consent');
+    const consent = localStorage.getItem('cookie_consent');
     if (!consent) {
-      setShow(true);
+      setVisible(true);
     }
   }, []);
 
-  const handleAccept = async () => {
-    localStorage.setItem('cookie-consent', 'true');
-    setShow(false);
-
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showNotification('Usuário não autenticado. Consentimento não será enviado ao backend.', 'info');
-      return;
-    }
-
-    let consentimento_localizacao = false;
-    if (navigator.geolocation) {
-      consentimento_localizacao = true;
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log('Latitude:', position.coords.latitude);
-          console.log('Longitude:', position.coords.longitude);
-          // Aqui você pode enviar a localização para o backend se necessário
-        },
-        (error) => {
-          showNotification('Erro ao obter localização: ' + error.message, 'error');
-          consentimento_localizacao = false; // Se houver erro, não considera consentido
-        }
-      );
-    }
-
-    try {
-      await fetch('/api/consent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          consentimento_cookies: true,
-          consentimento_localizacao: consentimento_localizacao,
-        }),
-      });
-    } catch (error) {
-      showNotification('Erro ao enviar consentimento para o backend.', 'error');
-    }
+  const handleAccept = () => {
+    localStorage.setItem('cookie_consent', 'true');
+    setVisible(false);
+    // Aqui você pode adicionar a lógica para obter a localização do usuário
   };
 
-  if (!show) {
+  if (!visible) {
     return null;
   }
 
   return (
-    <div>
+    <div className="cookie-consent">
       <p>
-        Este site utiliza cookies para melhorar a sua experiência. Ao continuar a navegar, você concorda com a nossa utilização de cookies e com a nossa política de privacidade, incluindo a coleta de sua localização.
+        Utilizamos cookies para melhorar sua experiência. Ao continuar, você
+        concorda com nossa política de cookies e nos permite acessar sua
+        localização.
       </p>
       <button onClick={handleAccept}>Aceitar</button>
     </div>
   );
 };
+
+export default CookieConsent;

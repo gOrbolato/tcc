@@ -1,56 +1,27 @@
-import { createBrowserRouter } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
 import Home from '../pages/Home';
-import Login from '../pages/Login';
-import Registro from '../pages/Registro';
-import RecuperarSenha from '../pages/RecuperarSenha';
-import Dashboard from '../pages/Dashboard';
-import Perfil from '../pages/Perfil';
-import Avaliacao from '../pages/Avaliacao';
-import AdminDashboard from '../pages/AdminDashboard';
-import AdminUserManagement from '../pages/AdminUserManagement';
-import InstitutionCourseManagement from '../pages/InstitutionCourseManagement';
+import Login from '../pages/auth/Login';
+import Registro from '../pages/auth/Registro';
+import RecuperarSenha from '../pages/auth/RecuperarSenha';
+import Dashboard from '../pages/user/Dashboard';
+import Perfil from '../pages/user/Perfil';
+import Avaliacao from '../pages/user/Avaliacao';
+import AdminDashboard from '../pages/admin/AdminDashboard';
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Home />,
-  },
-  {
-    path: '/login',
-    element: <Login />,
-  },
-  {
-    path: '/registro',
-    element: <Registro />,
-  },
-  {
-    path: '/recuperar-senha',
-    element: <RecuperarSenha />,
-  },
-  {
-    path: '/dashboard',
-    element: <Dashboard />,
-  },
-  {
-    path: '/perfil',
-    element: <Perfil />,
-  },
-  {
-    path: '/avaliacao',
-    element: <Avaliacao />,
-  },
-  {
-    path: '/admin',
-    element: <AdminDashboard />,
-  },
-  {
-    path: '/admin/users',
-    element: <AdminUserManagement />,
-  },
-  {
-    path: '/admin/institutions-courses',
-    element: <InstitutionCourseManagement />,
-  },
-]);
+const AppRoutes: React.FC = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/registro" element={<Registro />} />
+      <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/perfil" element={<Perfil />} />
+      <Route path="/avaliacao" element={<Avaliacao />} />
+      <Route path="/admin/AdminDashboard" element={<AdminDashboard />} />
+    </Routes>
+  );
+};
 
-export default router;
+export default AppRoutes;

@@ -1,52 +1,50 @@
 import React from 'react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import CookieConsent from '../components/CookieConsent';
-import '../styles/Home.css';
+import '../assets/styles/Home.css';
+
+// Importe as imagens dos criadores
+// import a from '../assets/images/a.jpg';
+
+
+const creators = [
+    { name: 'Nome do Criador 1', role: 'Cargo', image: a },
+    { name: 'Nome do Criador 2', role: 'Cargo', image: a },
+];
 
 const Home: React.FC = () => {
-  return (
-    <div className="home-container">
-      <CookieConsent />
-      <Header />
-      <main className="home-main">
-        <section className="home-intro-section">
-          <div className="intro-text">
-            <h1>Avaliação Educacional</h1>
-            <p>
-              Nosso sistema permite que você avalie sua instituição de ensino, curso e professores de forma anônima e segura. Suas respostas nos ajudam a criar um panorama sobre a qualidade do ensino.
-            </p>
-          </div>
-          <div className="search-box">
-            <h2>Pesquise por uma instituição, curso ou cidade</h2>
-            <input type="text" placeholder="Pesquisar..." />
-            <button>Pesquisar</button>
-          </div>
-        </section>
-        <section className="creators-section">
-          <h2>Criadores</h2>
-          <div className="creators-container">
-            <div className="creator-card">
-              <img src="https://via.placeholder.com/120" alt="Foto do criador" />
-              <h3>Guilherme Orbolato</h3>
-              <p>Desenvolvedor</p>
-            </div>
-            <div className="creator-card">
-              <img src="https://via.placeholder.com/120" alt="Foto do criador" />
-              <h3>Outro Criador 1</h3>
-              <p>Designer</p>
-            </div>
-            <div className="creator-card">
-              <img src="https://via.placeholder.com/120" alt="Foto do criador" />
-              <h3>Outro Criador 2</h3>
-              <p>Analista</p>
-            </div>
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </div>
-  );
+    return (
+        <div className="home-page">
+            <section className="hero-section">
+                <div className="hero-content">
+                    <div className="hero-text">
+                        <h1>Bem-vindo ao Avaliação Educacional</h1>
+                        <p>
+                            Uma plataforma segura e anônima para você avaliar sua
+                            instituição de ensino. Sua opinião é fundamental para a melhoria
+                            contínua da educação.
+                        </p>
+                    </div>
+                    <div className="search-box">
+                        <h2>Pesquise por Instituição, Curso ou Cidade</h2>
+                        <input type="text" placeholder="Digite sua pesquisa..." />
+                        <button>Pesquisar</button>
+                    </div>
+                </div>
+            </section>
+
+            <section className="creators-section">
+                <h2>Nossos Criadores</h2>
+                <div className="creators-container">
+                    {creators.map((creator, index) => (
+                        <div key={index} className="creator-card">
+                            <img src={creator.image} alt={creator.name} />
+                            <h3>{creator.name}</h3>
+                            <p>{creator.role}</p>
+                        </div>
+                    ))}
+                </div>
+            </section>
+        </div>
+    );
 };
 
 export default Home;

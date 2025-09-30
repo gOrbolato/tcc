@@ -1,0 +1,141 @@
+.dashboard-container,
+.avaliacao-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--card-bg-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+}
+
+.menu-container {
+  position: relative;
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  box-shadow: var(--shadow);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.menu-dropdown a {
+  padding: 0.8rem 1.2rem;
+  text-decoration: none;
+  color: var(--text-color);
+  display: block;
+}
+
+.menu-dropdown a:hover {
+  background-color: #f0f0f0;
+}
+
+.avaliacao-button {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border-radius: 5px;
+  text-decoration: none;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.avaliacoes-list h2 {
+  margin-bottom: 1rem;
+}
+
+.avaliacao-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+.avaliacao-item a{
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Pop-up */
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+.popup-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* Página de Avaliação */
+.pergunta-card {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.rating {
+  margin: 0.5rem 0;
+}
+
+.star-filled, .star-empty {
+  cursor: pointer;
+  color: #ddd;
+  font-size: 2rem;
+}
+
+.star-filled {
+  color: #f5c518;
+}
+
+.pergunta-card textarea {
+  width: 100%;
+  min-height: 80px;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}

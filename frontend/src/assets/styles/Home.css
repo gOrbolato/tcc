@@ -1,0 +1,75 @@
+.home-page {
+  padding: 2rem;
+}
+
+.hero-section {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  gap: 2rem;
+}
+
+.hero-text {
+  flex: 1;
+  text-align: left;
+}
+
+.search-box {
+  flex: 1;
+  background-color: var(--card-bg-color);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.search-box button {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.creators-section {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.creators-container {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.creator-card {
+  background-color: var(--card-bg-color);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  width: 200px;
+}
+
+.creator-card img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 1rem;
+}
