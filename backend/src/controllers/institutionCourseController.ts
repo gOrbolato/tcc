@@ -74,3 +74,23 @@ export const deleteCourse = async (req: Request, res: Response) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+export const createInstituicao = async (req: Request, res: Response) => {
+  try {
+    const { nome } = req.body;
+    const result = await service.createInstituicao(nome);
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createCurso = async (req: Request, res: Response) => {
+  try {
+    const { nome, instituicao_id } = req.body;
+    const result = await service.createCurso(nome, instituicao_id);
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

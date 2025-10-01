@@ -17,4 +17,12 @@ router.get('/courses', authenticate, isAdmin, getCourses);
 router.put('/courses/:id', authenticate, isAdmin, updateCourse);
 router.delete('/courses/:id', authenticate, isAdmin, deleteCourse);
 
+// Rotas para listar
+router.get('/instituicoes', controller.getAllInstituicoes);
+router.get('/instituicoes/:id/cursos', controller.getCursosByInstituicao);
+
+// Rotas para criar (NECESSÁRIAS PARA O REGISTRO)
+router.post('/instituicoes', controller.createInstituicao);
+router.post('/cursos', controller.createCurso);
+
 export default router;

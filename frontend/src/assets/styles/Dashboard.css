@@ -1,141 +1,117 @@
-.dashboard-container,
-.avaliacao-container {
-  max-width: 900px;
-  margin: 2rem auto;
+/* src/assets/styles/Dashboard.css */
+
+.dashboard-container {
   padding: 2rem;
-  background-color: var(--card-bg-color);
+  max-width: 1200px;
+  margin: 2rem auto;
+  background-color: #f8f9fa;
   border-radius: 8px;
-  box-shadow: var(--shadow);
 }
 
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 1rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 1.5rem;
 }
 
-.menu-container {
-  position: relative;
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin: 0;
 }
 
-.menu-button {
-  background: none;
+.new-evaluation-btn {
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #007bff;
   border: none;
-  font-size: 1.5rem;
+  border-radius: 6px;
+  text-decoration: none;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.menu-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background-color: white;
-  box-shadow: var(--shadow);
-  border-radius: 5px;
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
+.new-evaluation-btn:hover {
+  background-color: #0056b3;
 }
 
-.menu-dropdown a {
-  padding: 0.8rem 1.2rem;
-  text-decoration: none;
-  color: var(--text-color);
-  display: block;
-}
-
-.menu-dropdown a:hover {
-  background-color: #f0f0f0;
-}
-
-.avaliacao-button {
-  display: inline-block;
-  background-color: var(--primary-color);
-  color: white;
-  padding: 0.8rem 1.5rem;
-  border-radius: 5px;
-  text-decoration: none;
-  margin-bottom: 2rem;
+.evaluations-list h2 {
+  font-size: 1.8rem;
+  color: #34495e;
+  margin-bottom: 1.5rem;
   text-align: center;
 }
 
-.avaliacoes-list h2 {
+.evaluation-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  border-left: 5px solid #007bff;
+}
+
+.card-header {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
   margin-bottom: 1rem;
 }
 
-.avaliacao-item {
-  display: flex;
-  justify-content: space-between;
+.card-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.4rem;
+}
+
+.card-header span {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.card-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.card-notes, .card-observations {
   padding: 1rem;
-  border-bottom: 1px solid #eee;
-}
-.avaliacao-item a{
-    text-decoration: none;
-    color: var(--primary-color);
-    font-weight: bold;
+  background-color: #f8f9fa;
+  border-radius: 6px;
 }
 
-/* Pop-up */
-.popup {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1001;
+.card-notes h4, .card-observations h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #34495e;
 }
 
-.popup-content {
-  background-color: white;
-  padding: 2rem;
+.card-notes p, .card-observations p {
+  margin: 0;
+  color: #555;
+  font-style: italic;
+}
+
+.card-notes .note {
+  font-weight: bold;
+  color: #007bff;
+  font-size: 1.2rem;
+}
+
+.no-evaluations {
+  text-align: center;
+  padding: 3rem;
+  background-color: #fff;
   border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
-.close-button {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
-/* Página de Avaliação */
-.pergunta-card {
-  margin-bottom: 1.5rem;
-  padding: 1.5rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-
-.rating {
-  margin: 0.5rem 0;
-}
-
-.star-filled, .star-empty {
-  cursor: pointer;
-  color: #ddd;
-  font-size: 2rem;
-}
-
-.star-filled {
-  color: #f5c518;
-}
-
-.pergunta-card textarea {
-  width: 100%;
-  min-height: 80px;
-  margin-top: 1rem;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+.no-evaluations p {
+  font-size: 1.1rem;
+  color: #555;
 }

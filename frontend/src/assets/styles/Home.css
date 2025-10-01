@@ -26,6 +26,55 @@
   margin-bottom: 2rem;
 }
 
+.hero .search-container {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 700px;
+}
+
+.hero .search-form {
+  display: flex;
+  background: #fff;
+  border-radius: 50px;
+  padding: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.hero .search-input {
+  flex-grow: 1;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  padding: 0 20px;
+  color: #333;
+  outline: none;
+}
+
+.hero .search-button {
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.hero .search-button:hover {
+  background-color: #0056b3;
+}
+
+.hero .actions-container {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
 .hero .cta-button {
   padding: 1rem 2.5rem;
   font-size: 1.1rem;
@@ -44,15 +93,30 @@
   transform: translateY(-3px);
 }
 
-/* Seções Gerais */
+/* Estilos Gerais das Seções */
 .home-section {
   padding: 4rem 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Alterna a cor de fundo das seções */
+.home-section:nth-of-type(even) {
+  background-color: #ffffff;
+}
+
+.home-section:nth-of-type(odd) {
+  background-color: #f8f9fa;
+}
+
+/* Container do Conteúdo Centralizado */
+.section-content {
   max-width: 1200px;
   margin: 0 auto;
   text-align: center;
 }
 
-.home-section h2 {
+.section-content h2 {
   font-size: 2.2rem;
   color: #2c3e50;
   margin-bottom: 2.5rem;
@@ -60,7 +124,7 @@
   display: inline-block;
 }
 
-.home-section h2::after {
+.section-content h2::after {
   content: '';
   display: block;
   width: 60px;
@@ -84,6 +148,7 @@
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border-top: 4px solid #007bff;
 }
 
 .step h3 {
@@ -99,10 +164,6 @@
 }
 
 /* Seção "Sobre a Plataforma" */
-.about-platform {
-  background: #fff;
-}
-
 .about-platform .about-content {
   display: flex;
   align-items: center;
@@ -146,11 +207,12 @@
 }
 
 .developer-card .developer-photo {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+  width: 120px; 
+  height: 120px;
   object-fit: cover;
   border: 3px solid #007bff;
+  border-radius: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .developer-card .developer-info {
@@ -179,41 +241,9 @@
 }
 
 /* Seção "Apresentação do Projeto" */
-.project-presentation {
-  background: #fff;
-}
-
 .project-presentation p {
   max-width: 800px;
   margin: 0 auto;
   line-height: 1.7;
   color: #555;
-}
-
-/* Ajustes na Seção Hero */
-.hero .actions-container {
-  margin-top: 2.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  width: 100%;
-}
-
-.hero .cta-button {
-  padding: 1rem 2.5rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: #fff;
-  background-color: #007bff;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background-color 0.3s, transform 0.3s;
-}
-
-.hero .cta-button:hover {
-  background-color: #0056b3;
-  transform: translateY(-3px);
 }

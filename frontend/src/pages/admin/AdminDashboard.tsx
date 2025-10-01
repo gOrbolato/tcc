@@ -1,33 +1,37 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import '../../assets/styles/Dashboard.css';
+import { useAuth } from '../../contexts/AuthContext';
+// O caminho correto precisa de mais um '../' para sair da pasta 'admin'
+import '../../assets/styles/Admin.css'; 
 
 const AdminDashboard: React.FC = () => {
-    return (
-        <div className="dashboard-container">
-            <div className="dashboard-header">
-                <h1>Painel do Administrador</h1>
-                <div className="menu-container">
-                    <Link to="/" className="nav-link">Sair</Link>
-                </div>
-            </div>
+  const { user } = useAuth();
 
-            <div className="admin-actions">
-                <input type="text" placeholder="Pesquisar instituição ou curso..." />
-                <button>Pesquisar</button>
-                <button>Baixar Relatórios</button>
-            </div>
+  return (
+    <div className="admin-container">
+      <header className="admin-header">
+        <h1>Painel do Administrador</h1>
+        {user && <p>Bem-vindo(a), {user.nome}!</p>}
+      </header>
 
-            <div className="analises-container">
-                <h2>Análises</h2>
-                <div className="analise-item">
-                    <h3>Instituição X - Média Geral: 4.2</h3>
-                    <p>Gráficos e análises de IA sobre a instituição...</p>
-                    {/* Gráficos podem ser inseridos aqui */}
-                </div>
-            </div>
-        </div>
-    );
+      <nav className="admin-nav">
+        <Link to="/admin/gerenciar-usuarios" className="admin-nav-item">
+          <h2>Gerenciar Usuários</h2>
+          <p>Adicionar, editar ou remover usuários do sistema.</p>
+        </Link>
+        
+        <Link to="/admin/gerenciar-instituicoes" className="admin-nav-item">
+          <h2>Gerenciar Instituições e Cursos</h2>
+          <p>Adicionar ou editar instituições de ensino e seus respectivos cursos.</p>
+        </Link>
+        
+        <Link to="/admin/visualizar-avaliacoes" className="admin-nav-item">
+          <h2>Visualizar Avaliações</h2>
+          <p>Acesse e filtre todas as avaliações enviadas pelos alunos.</p>
+        </Link>
+      </nav>
+    </div>
+  );
 };
 
 export default AdminDashboard;

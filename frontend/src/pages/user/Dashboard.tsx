@@ -1,65 +1,79 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import '../../assets/styles/Dashboard.css';
+import api from '../../services/api';
+import { useNotification } from '../../contexts/NotificationContext';
+import '../../assets/styles/Dashboard.css'; // Importando o novo CSS
+
+interface Evaluation {
+  id: number;
+  instituicao_nome: string;
+  curso_nome: string;
+  nota_infraestrutura: number;
+  obs_infraestrutura: string;
+  nota_material_didatico: number;
+  obs_material_didatico: string;
+  criado_em: string;
+}
 
 const Dashboard: React.FC = () => {
-    const [showMenu, setShowMenu] = useState(false);
-    const [selectedAvaliacao, setSelectedAvaliacao] = useState<any>(null);
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const { addNotification } = useNotification();
 
-    const avaliacoes = [
-        { id: 1, data: '20/04/2024', instituicao: 'Instituição A', media: 4.5, notas: { infra: 4, material: 5 } },
-        { id: 2, data: '15/02/2024', instituicao: 'Instituição B', media: 3.8, notas: { infra: 3, material: 4.6 } },
-    ];
+  useEffect(() => {
+    const fetchEvaluations = async () => {
+      try {
+        const response = await api.get('/evaluations');
+        setEvaluations(response.data);
+      } catch (error) {
+        addNotification('Erro ao carregar suas avaliações.', 'error');
+      }
+    };
 
-    return (
-        <div className="dashboard-container">
-            <div className="dashboard-header">
-                <h1>Bem-vindo, Aluno(a)-{Math.floor(10000 + Math.random() * 90000)}</h1>
-                <div className="menu-container">
-                    <button className="menu-button" onClick={() => setShowMenu(!showMenu)}>
-                        &#9776;
-                    </button>
-                    {showMenu && (
-                        <div className="menu-dropdown">
-                            <Link to="/perfil">Perfil</Link>
-                            <Link to="/">Sair</Link>
-                        </div>
-                    )}
+    fetchEvaluations();
+  }, [addNotification]);
+
+  return (
+    <div className="dashboard-container">
+      <header className="dashboard-header">
+        <h1>Minhas Avaliações</h1>
+        <Link to="/nova-avaliacao" className="new-evaluation-btn">
+          Nova Avaliação
+        </Link>
+      </header>
+
+      <div className="evaluations-list">
+        {evaluations.length > 0 ? (
+          evaluations.map((evaluation) => (
+            <div key={evaluation.id} className="evaluation-card">
+              <div className="card-header">
+                <h3>{evaluation.instituicao_nome}</h3>
+                <span>
+                  Curso: {evaluation.curso_nome} | Feita em: {new Date(evaluation.criado_em).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="card-body">
+                <div className="card-notes">
+                  <h4>Notas</h4>
+                  <p>Infraestrutura: <span className="note">{evaluation.nota_infraestrutura}/5</span></p>
+                  <p>Material Didático: <span className="note">{evaluation.nota_material_didatico}/5</span></p>
                 </div>
-            </div>
-
-            <Link to="/avaliacao" className="avaliacao-button">
-                Nova Avaliação
-            </Link>
-
-            <div className="avaliacoes-list">
-                <h2>Últimas Avaliações</h2>
-                {avaliacoes.map(avaliacao => (
-                    <div key={avaliacao.id} className="avaliacao-item">
-                        <span>{avaliacao.data}</span>
-                        <a href="#" onClick={() => setSelectedAvaliacao(avaliacao)}>
-                            {avaliacao.instituicao}
-                        </a>
-                        <span>Média: {avaliacao.media}</span>
-                    </div>
-                ))}
-            </div>
-
-            {selectedAvaliacao && (
-                <div className="popup">
-                    <div className="popup-content">
-                        <span className="close-button" onClick={() => setSelectedAvaliacao(null)}>&times;</span>
-                        <h2>Detalhes da Avaliação</h2>
-                        <p><strong>Instituição:</strong> {selectedAvaliacao.instituicao}</p>
-                        <p><strong>Data:</strong> {selectedAvaliacao.data}</p>
-                        <p><strong>Nota Infraestrutura:</strong> {selectedAvaliacao.notas.infra}</p>
-                        <p><strong>Nota Material Didático:</strong> {selectedAvaliacao.notas.material}</p>
-                        <p><strong>Média Final:</strong> {selectedAvaliacao.media}</p>
-                    </div>
+                <div className="card-observations">
+                  <h4>Observações</h4>
+                  <p><strong>Infraestrutura:</strong> {evaluation.obs_infraestrutura || 'N/A'}</p>
+                  <p><strong>Material Didático:</strong> {evaluation.obs_material_didatico || 'N/A'}</p>
                 </div>
-            )}
-        </div>
-    );
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="no-evaluations">
+            <p>Você ainda não fez nenhuma avaliação.</p>
+            <p>Clique em "Nova Avaliação" para começar!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Dashboard;

@@ -1,0 +1,49 @@
+/* Adicionar ao final de Admin.css */
+
+.management-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 2rem;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.management-table th,
+.management-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.management-table th {
+  background-color: #e9ecef;
+  color: #495057;
+  font-weight: 600;
+}
+
+.management-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.action-buttons button {
+  padding: 8px 12px;
+  margin-right: 8px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: white;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+
+.action-buttons .edit-btn {
+  background-color: #007bff;
+}
+
+.action-buttons .delete-btn {
+  background-color: #dc3545;
+}
+
+.action-buttons button:hover {
+  opacity: 0.8;
+}

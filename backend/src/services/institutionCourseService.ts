@@ -60,3 +60,13 @@ export const deleteCourse = async (id: number) => {
     throw new Error('Curso não encontrado.');
   }
 };
+
+export const createInstituicao = async (nome: string) => {
+  const [result] = await pool.query<OkPacket>('INSERT INTO Instituicoes (nome) VALUES (?)', [nome]);
+  return { id: result.insertId, nome };
+};
+
+export const createCurso = async (nome: string, instituicao_id: number) => {
+  const [result] = await pool.query<OkPacket>('INSERT INTO Cursos (nome, instituicao_id) VALUES (?, ?)', [nome, instituicao_id]);
+  return { id: result.insertId, nome, instituicao_id };
+};
