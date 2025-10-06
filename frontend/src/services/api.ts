@@ -8,16 +8,13 @@ const api = axios.create({
 // Interceptador de requisições: Adiciona o token de autenticação em cada chamada
 api.interceptors.request.use(
   (config) => {
-    // Pega o token do localStorage
     const token = localStorage.getItem('authToken');
     if (token) {
-      // Se o token existir, adiciona ao cabeçalho 'Authorization'
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => {
-    // Em caso de erro na requisição, rejeita a promise
     return Promise.reject(error);
   }
 );

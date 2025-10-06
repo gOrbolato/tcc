@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import * as institutionCourseService from '../services/institutionCourseService';
 
@@ -5,7 +6,7 @@ import * as institutionCourseService from '../services/institutionCourseService'
 export const createInstitution = async (req: Request, res: Response) => {
   try {
     const institution = await institutionCourseService.createInstitution(req.body.nome);
-    res.status(201).json({ message: 'Instituição criada com sucesso!', institution });
+    res.status(201).json({ message: 'Instituição criada com sucesso!', id: institution.id });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
@@ -42,7 +43,7 @@ export const deleteInstitution = async (req: Request, res: Response) => {
 export const createCourse = async (req: Request, res: Response) => {
   try {
     const course = await institutionCourseService.createCourse(req.body.nome, req.body.instituicao_id);
-    res.status(201).json({ message: 'Curso criado com sucesso!', course });
+    res.status(201).json({ message: 'Curso criado com sucesso!', id: course.id });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
@@ -56,6 +57,15 @@ export const getCourses = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const getCoursesByInstitution = async (req: Request, res: Response) => {
+    try {
+      const courses = await institutionCourseService.getCoursesByInstitutionId(Number(req.params.id));
+      res.status(200).json(courses);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  };
 
 export const updateCourse = async (req: Request, res: Response) => {
   try {
@@ -72,25 +82,5 @@ export const deleteCourse = async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Curso excluído com sucesso!' });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
-  }
-};
-
-export const createInstituicao = async (req: Request, res: Response) => {
-  try {
-    const { nome } = req.body;
-    const result = await service.createInstituicao(nome);
-    res.status(201).json(result);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const createCurso = async (req: Request, res: Response) => {
-  try {
-    const { nome, instituicao_id } = req.body;
-    const result = await service.createCurso(nome, instituicao_id);
-    res.status(201).json(result);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
   }
 };

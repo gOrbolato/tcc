@@ -1,6 +1,8 @@
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { errorHandler } from './middlewares/errorMiddleware';
 
 dotenv.config();
 
@@ -9,6 +11,7 @@ const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+app.use(errorHandler);
 
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';

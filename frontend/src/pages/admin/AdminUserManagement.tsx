@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -12,7 +13,7 @@ interface User {
 
 const AdminUserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const { addNotification } = useNotification();
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -20,20 +21,20 @@ const AdminUserManagement: React.FC = () => {
         const response = await api.get('/admin/users');
         setUsers(response.data);
       } catch (error) {
-        addNotification('Erro ao carregar usuários.', 'error');
+        showNotification('Erro ao carregar usuários.', 'error');
       }
     };
     fetchUsers();
-  }, [addNotification]);
+  }, [showNotification]);
 
   const handleDelete = async (userId: number) => {
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
         await api.delete(`/admin/users/${userId}`);
         setUsers(users.filter(user => user.id !== userId));
-        addNotification('Usuário excluído com sucesso!', 'success');
+        showNotification('Usuário excluído com sucesso!', 'success');
       } catch (error) {
-        addNotification('Erro ao excluir usuário.', 'error');
+        showNotification('Erro ao excluir usuário.', 'error');
       }
     }
   };

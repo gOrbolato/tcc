@@ -2,26 +2,13 @@ import { Request, Response } from 'express';
 import * as authService from '../services/authService';
 
 export const register = async (req: Request, res: Response) => {
-  try {
-    const user = await authService.register(req.body);
-    res.status(201).json({ message: 'Usuário registrado com sucesso!', user });
-  } catch (error: any) {
-    res.status(400).json({ message: error.message });
-  }
+  const user = await authService.register(req.body);
+  res.status(201).json({ message: 'Usuário registrado com sucesso!', user });
 };
 
 export const login = async (req: Request, res: Response) => {
-  const { email, senha } = req.body; // Alterado de 'ra' para 'email'
-  if (!email || !senha) {
-    return res.status(400).json({ message: 'E-mail e senha são obrigatórios' });
-  }
-
-  try {
-    const data = await authService.loginUser(email, senha);
-    res.json(data);
-  } catch (error: any) {
-    res.status(401).json({ message: error.message });
-  }
+  const { token, user } = await authService.login(req.body.email, req.body.senha);
+  res.status(200).json({ token, user });
 };
 
 export const forgotPassword = async (req: Request, res: Response) => {

@@ -1,102 +1,77 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
+import { useNotification } from '../../contexts/NotificationContext';
 import '../../assets/styles/Dashboard.css';
 
 const Avaliacao: React.FC = () => {
-    const [perguntas, setPerguntas] = useState([
-        // Perguntas sobre a Instituição
-        { id: 1, categoria: 'Instituição', texto: 'Como você avalia a infraestrutura geral (salas de aula, laboratórios, etc.)?', nota: 0, obs: '' },
-        { id: 2, categoria: 'Instituição', texto: 'A coordenação do seu curso é acessível e prestativa?', nota: 0, obs: '' },
-        { id: 3, categoria: 'Instituição', texto: 'Como você avalia o atendimento da secretaria acadêmica?', nota: 0, obs: '' },
-        { id: 4, categoria: 'Instituição', texto: 'O acervo da biblioteca (físico e digital) atende às suas necessidades?', nota: 0, obs: '' },
-        { id: 5, categoria: 'Instituição', texto: 'Os equipamentos disponíveis (computadores, projetores, etc.) são modernos e funcionais?', nota: 0, obs: '' },
-        { id: 6, categoria: 'Instituição', texto: 'A instituição oferece boas opções de cursos de extensão e atividades extracurriculares?', nota: 0, obs: '' },
-        { id: 7, categoria: 'Instituição', texto: 'Qual a sua percepção sobre a influência e a imagem da instituição na comunidade?', nota: 0, obs: '' },
-        { id: 8, categoria: 'Instituição', texto: 'A instituição te auxilia na busca por estágios e oportunidades no mercado de trabalho?', nota: 0, obs: '' },
+    const [notaInfra, setNotaInfra] = useState(0);
+    const [obsInfra, setObsInfra] = useState('');
+    const [notaMaterial, setNotaMaterial] = useState(0);
+    const [obsMaterial, setObsMaterial] = useState('');
+    const navigate = useNavigate();
+    const { showNotification } = useNotification();
 
-        // Perguntas sobre o Curso
-        { id: 9, categoria: 'Curso', texto: 'O material didático fornecido pelos professores é de qualidade e atualizado?', nota: 0, obs: '' },
-        { id: 10, categoria: 'Curso', texto: 'Os professores demonstram domínio do conteúdo e estão disponíveis para tirar dúvidas?', nota: 0, obs: '' },
-        { id: 11, categoria: 'Curso', texto: 'A metodologia de ensino utilizada pelos professores é eficaz e estimulante?', nota: 0, obs: '' },
-        { id: 12, categoria: 'Curso', texto: 'O conteúdo abordado nas disciplinas está alinhado com as demandas do mercado de trabalho?', nota: 0, obs: '' },
-        { id: 13, categoria: 'Curso', texto: 'As avaliações aplicadas são justas e condizentes com o que foi ensinado?', nota: 0, obs: '' },
-    ]);
-
-    const handleNotaChange = (id: number, nota: number) => {
-        setPerguntas(perguntas.map(p => p.id === id ? { ...p, nota } : p));
-    };
-
-    const handleObsChange = (id: number, obs: string) => {
-        setPerguntas(perguntas.map(p => p.id === id ? { ...p, obs } : p));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Lógica para calcular as médias e salvar a avaliação
-        const notasInstituicao = perguntas.filter(p => p.categoria === 'Instituição').map(p => p.nota);
-        const mediaInstituicao = notasInstituicao.reduce((a, b) => a + b, 0) / notasInstituicao.length;
+        try {
+            // OBS: Em um app real, o usuário selecionaria a instituição/curso.
+            // Aqui, estamos usando valores fixos para o exemplo.
+            // Você precisará buscar os dados do usuário logado para obter isso.
+            const evaluationData = {
+                instituicao_id: 1, // Exemplo: Pegar do perfil do usuário
+                curso_id: 1,       // Exemplo: Pegar do perfil do usuário
+                nota_infraestrutura: notaInfra,
+                obs_infraestrutura: obsInfra,
+                nota_material_didatico: notaMaterial,
+                obs_material_didatico: obsMaterial,
+            };
 
-        const notasCurso = perguntas.filter(p => p.categoria === 'Curso').map(p => p.nota);
-        const mediaCurso = notasCurso.reduce((a, b) => a + b, 0) / notasCurso.length;
-
-        const mediaFinal = (mediaInstituicao + mediaCurso) / 2;
-
-        console.log('Média Instituição:', mediaInstituicao.toFixed(2));
-        console.log('Média Curso:', mediaCurso.toFixed(2));
-        console.log('Média Final:', mediaFinal.toFixed(2));
-        console.log('Respostas:', perguntas);
-        
-        alert('Avaliação enviada com sucesso!');
+            await api.post('/avaliacoes', evaluationData);
+            showNotification('Avaliação enviada com sucesso!', 'success');
+            navigate('/dashboard'); // Supondo que o dashboard do usuário seja em /dashboard
+        } catch (error) {
+            showNotification('Erro ao enviar avaliação.', 'error');
+        }
     };
+
+    const Rating = ({ nota, onNotaChange }: { nota: number, onNotaChange: (nota: number) => void }) => (
+        <div className="rating">
+            {[1, 2, 3, 4, 5].map(valor => (
+                <span
+                    key={valor}
+                    className={nota >= valor ? 'star-filled' : 'star-empty'}
+                    onClick={() => onNotaChange(valor)}
+                >
+                    &#9733;
+                </span>
+            ))}
+        </div>
+    );
 
     return (
         <div className="avaliacao-container">
-            <h2>Página de Avaliação</h2>
+            <h2>Realizar Nova Avaliação</h2>
             <form onSubmit={handleSubmit}>
-                <h2>Avaliação da Instituição</h2>
-                {perguntas.filter(p => p.categoria === 'Instituição').map(pergunta => (
-                    <div key={pergunta.id} className="pergunta-card">
-                        <h3>{pergunta.texto}</h3>
-                        <div className="rating">
-                            {[1, 2, 3, 4, 5].map(valor => (
-                                <span
-                                    key={valor}
-                                    className={pergunta.nota >= valor ? 'star-filled' : 'star-empty'}
-                                    onClick={() => handleNotaChange(pergunta.id, valor)}
-                                >
-                                    &#9733;
-                                </span>
-                            ))}
-                        </div>
-                        <textarea
-                            placeholder="Observações..."
-                            value={pergunta.obs}
-                            onChange={(e) => handleObsChange(pergunta.id, e.target.value)}
-                        />
-                    </div>
-                ))}
+                <div className="pergunta-card">
+                    <h3>Como você avalia a infraestrutura geral (salas de aula, laboratórios, etc.)?</h3>
+                    <Rating nota={notaInfra} onNotaChange={setNotaInfra} />
+                    <textarea
+                        placeholder="Observações sobre a infraestrutura..."
+                        value={obsInfra}
+                        onChange={(e) => setObsInfra(e.target.value)}
+                    />
+                </div>
 
-                <h2>Avaliação do Curso</h2>
-                {perguntas.filter(p => p.categoria === 'Curso').map(pergunta => (
-                    <div key={pergunta.id} className="pergunta-card">
-                        <h3>{pergunta.texto}</h3>
-                        <div className="rating">
-                            {[1, 2, 3, 4, 5].map(valor => (
-                                <span
-                                    key={valor}
-                                    className={pergunta.nota >= valor ? 'star-filled' : 'star-empty'}
-                                    onClick={() => handleNotaChange(pergunta.id, valor)}
-                                >
-                                    &#9733;
-                                </span>
-                            ))}
-                        </div>
-                        <textarea
-                            placeholder="Observações..."
-                            value={pergunta.obs}
-                            onChange={(e) => handleObsChange(pergunta.id, e.target.value)}
-                        />
-                    </div>
-                ))}
+                <div className="pergunta-card">
+                    <h3>Como você avalia o material didático fornecido?</h3>
+                    <Rating nota={notaMaterial} onNotaChange={setNotaMaterial} />
+                    <textarea
+                        placeholder="Observações sobre o material didático..."
+                        value={obsMaterial}
+                        onChange={(e) => setObsMaterial(e.target.value)}
+                    />
+                </div>
                 <button type="submit" className="avaliacao-button">Salvar Avaliação</button>
             </form>
         </div>

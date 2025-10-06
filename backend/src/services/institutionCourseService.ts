@@ -61,6 +61,11 @@ export const deleteCourse = async (id: number) => {
   }
 };
 
+export const getCoursesByInstitutionId = async (id: number) => {
+  const [courses] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Cursos WHERE instituicao_id = ?', [id]);
+  return courses;
+};
+
 export const createInstituicao = async (nome: string) => {
   const [result] = await pool.query<OkPacket>('INSERT INTO Instituicoes (nome) VALUES (?)', [nome]);
   return { id: result.insertId, nome };

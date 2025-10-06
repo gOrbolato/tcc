@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../contexts/NotificationContext';
+import api from '../services/api'; // Usando a instância do Axios
+import '../assets/styles/Admin.css'; // Reutilizando o CSS do admin para consistência
 
 interface Institution {
   id: number;
@@ -11,7 +12,7 @@ interface Course {
   id: number;
   nome: string;
   instituicao_id: number;
-  instituicao_nome?: string; // Para exibir o nome da instituição
+  instituicao_nome?: string;
 }
 
 const InstitutionCourseManagement: React.FC = () => {
@@ -21,37 +22,19 @@ const InstitutionCourseManagement: React.FC = () => {
   const [newCourseName, setNewCourseName] = useState<string>('');
   const [newCourseInstitutionId, setNewCourseInstitutionId] = useState<number | string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const navigate = useNavigate();
-  const { showNotification } = useNotification();
-
-  const token = localStorage.getItem('token');
+  const { showNotification } = useNotification(); // Corrigido de addNotification
 
   const fetchData = async () => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
     setLoading(true);
     try {
       const [institutionsRes, coursesRes] = await Promise.all([
-        fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/courses', { headers: { 'Authorization': `Bearer ${token}` } }),
+        api.get('/institutions'),
+        api.get('/courses'),
       ]);
 
-      const institutionsData = await institutionsRes.json();
-      const coursesData = await coursesRes.json();
+      setInstitutions(institutionsRes.data);
+      setCourses(coursesRes.data);
 
-      if (institutionsRes.ok) {
-        setInstitutions(institutionsData);
-      } else {
-        showNotification(institutionsData.message || 'Erro ao carregar instituições.', 'error');
-      }
-
-      if (coursesRes.ok) {
-        setCourses(coursesData);
-      } else {
-        showNotification(coursesData.message || 'Erro ao carregar cursos.', 'error');
-      }
     } catch (err) {
       showNotification('Ocorreu um erro ao carregar dados.', 'error');
     } finally {
@@ -61,101 +44,59 @@ const InstitutionCourseManagement: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [navigate, showNotification]);
+  }, []);
 
   const handleCreateInstitution = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) { navigate('/login'); return; }
-
     try {
-      const response = await fetch('/api/institutions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ nome: newInstitutionName }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        showNotification('Instituição criada com sucesso!', 'success');
-        setNewInstitutionName('');
-        fetchData();
-      } else {
-        showNotification(data.message || 'Erro ao criar instituição.', 'error');
-      }
+      const response = await api.post('/institutions', { nome: newInstitutionName });
+      showNotification('Instituição criada com sucesso!', 'success');
+      setNewInstitutionName('');
+      fetchData(); // Re-fetch para atualizar a lista
     } catch (err) {
-      showNotification('Ocorreu um erro ao criar instituição.', 'error');
+      showNotification('Erro ao criar instituição.', 'error');
     }
   };
 
   const handleDeleteInstitution = async (id: number) => {
     if (!window.confirm('Tem certeza que deseja excluir esta instituição? Isso também excluirá os cursos associados.')) return;
-    if (!token) { navigate('/login'); return; }
-
     try {
-      const response = await fetch(`/api/institutions/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        showNotification('Instituição excluída com sucesso!', 'success');
-        fetchData();
-      } else {
-        showNotification(data.message || 'Erro ao excluir instituição.', 'error');
-      }
+      await api.delete(`/institutions/${id}`);
+      showNotification('Instituição excluída com sucesso!', 'success');
+      fetchData();
     } catch (err) {
-      showNotification('Ocorreu um erro ao excluir instituição.', 'error');
+      showNotification('Erro ao excluir instituição.', 'error');
     }
   };
 
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) { navigate('/login'); return; }
-
     try {
-      const response = await fetch('/api/courses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ nome: newCourseName, instituicao_id: Number(newCourseInstitutionId) }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        showNotification('Curso criado com sucesso!', 'success');
-        setNewCourseName('');
-        setNewCourseInstitutionId('');
-        fetchData();
-      } else {
-        showNotification(data.message || 'Erro ao criar curso.', 'error');
-      }
+      await api.post('/courses', { nome: newCourseName, instituicao_id: Number(newCourseInstitutionId) });
+      showNotification('Curso criado com sucesso!', 'success');
+      setNewCourseName('');
+      setNewCourseInstitutionId('');
+      fetchData();
     } catch (err) {
-      showNotification('Ocorreu um erro ao criar curso.', 'error');
+      showNotification('Erro ao criar curso.', 'error');
     }
   };
 
   const handleDeleteCourse = async (id: number) => {
     if (!window.confirm('Tem certeza que deseja excluir este curso?')) return;
-    if (!token) { navigate('/login'); return; }
-
     try {
-      const response = await fetch(`/api/courses/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        showNotification('Curso excluído com sucesso!', 'success');
-        fetchData();
-      } else {
-        showNotification(data.message || 'Erro ao excluir curso.', 'error');
-      }
+      await api.delete(`/courses/${id}`);
+      showNotification('Curso excluído com sucesso!', 'success');
+      fetchData();
     } catch (err) {
-      showNotification('Ocorreu um erro ao excluir curso.', 'error');
+      showNotification('Erro ao excluir curso.', 'error');
     }
   };
 
   if (loading) return <p>Carregando dados...</p>;
 
   return (
-    <div>
+    <div className="admin-container"> {/* Usando a classe de container do admin */}
       <h1>Gerenciamento de Instituições e Cursos</h1>
 
       <section>
@@ -173,7 +114,7 @@ const InstitutionCourseManagement: React.FC = () => {
         {institutions.length === 0 ? (
           <p>Nenhuma instituição cadastrada.</p>
         ) : (
-          <table>
+          <table className="management-table"> {/* Aplicando a classe da tabela */}
             <thead>
               <tr>
                 <th>ID</th>
@@ -186,9 +127,8 @@ const InstitutionCourseManagement: React.FC = () => {
                 <tr key={inst.id}>
                   <td>{inst.id}</td>
                   <td>{inst.nome}</td>
-                  <td>
-                    {/* Implementar edição futuramente */}
-                    <button onClick={() => handleDeleteInstitution(inst.id)}>Excluir</button>
+                  <td className="action-buttons">
+                    <button onClick={() => handleDeleteInstitution(inst.id)} className="delete-btn">Excluir</button>
                   </td>
                 </tr>
               ))}
@@ -224,7 +164,7 @@ const InstitutionCourseManagement: React.FC = () => {
         {courses.length === 0 ? (
           <p>Nenhum curso cadastrado.</p>
         ) : (
-          <table>
+          <table className="management-table"> {/* Aplicando a classe da tabela */}
             <thead>
               <tr>
                 <th>ID</th>
@@ -238,10 +178,9 @@ const InstitutionCourseManagement: React.FC = () => {
                 <tr key={course.id}>
                   <td>{course.id}</td>
                   <td>{course.nome}</td>
-                  <td>{course.instituicao_nome}</td>
-                  <td>
-                    {/* Implementar edição futuramente */}
-                    <button onClick={() => handleDeleteCourse(course.id)}>Excluir</button>
+                  <td>{course.instituicao_nome || 'N/A'}</td>
+                  <td className="action-buttons">
+                    <button onClick={() => handleDeleteCourse(course.id)} className="delete-btn">Excluir</button>
                   </td>
                 </tr>
               ))}

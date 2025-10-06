@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -17,7 +18,7 @@ interface Evaluation {
 
 const Dashboard: React.FC = () => {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const { addNotification } = useNotification();
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     const fetchEvaluations = async () => {
@@ -25,12 +26,12 @@ const Dashboard: React.FC = () => {
         const response = await api.get('/evaluations');
         setEvaluations(response.data);
       } catch (error) {
-        addNotification('Erro ao carregar suas avaliações.', 'error');
+        showNotification('Erro ao carregar suas avaliações.', 'error');
       }
     };
 
     fetchEvaluations();
-  }, [addNotification]);
+  }, [showNotification]);
 
   return (
     <div className="dashboard-container">
