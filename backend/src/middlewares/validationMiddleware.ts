@@ -8,8 +8,8 @@ export const validateRegister = [
   body('idade').isInt({ min: 10, max: 100 }).withMessage('Idade inválida.'),
   body('email').isEmail().withMessage('E-mail inválido.'),
   body('senha').isLength({ min: 8 }).withMessage('A senha deve ter no mínimo 8 caracteres.'),
-  body('instituicao').notEmpty().withMessage('Instituição é obrigatória.'),
-  body('curso').notEmpty().withMessage('Curso é obrigatório.'),
+  body('instituicao_id').isInt({ min: 1 }).withMessage('Instituição é obrigatória.'),
+  body('curso_id').isInt({ min: 1 }).withMessage('Curso é obrigatório.'),
   body('periodo').notEmpty().withMessage('Período é obrigatório.'),
   body('semestre').notEmpty().withMessage('Semestre é obrigatório.'),
 ];

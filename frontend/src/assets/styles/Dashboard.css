@@ -12,9 +12,35 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap; /* Para responsividade */
+  gap: 1rem;
   margin-bottom: 2.5rem;
   border-bottom: 1px solid #dee2e6;
   padding-bottom: 1.5rem;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.secondary-btn, .logout-btn-user {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid #6c757d;
+  background-color: transparent;
+  color: #6c757d;
+  transition: all 0.2s ease;
+}
+
+.secondary-btn:hover, .logout-btn-user:hover {
+  background-color: #6c757d;
+  color: #fff;
 }
 
 .dashboard-header h1 {

@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import '../../assets/styles/Auth.css';
+import AuthLayout from '../../components/AuthLayout';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -27,48 +28,41 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-sidebar">
-        <Link to="/" className="auth-logo">
-            Avaliação Educacional
-        </Link>
-      </div>
-      <div className="auth-main">
-        <div className="auth-form-container">
-          <h2>Login</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-                <label htmlFor="email">E-mail</label>
-                <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                />
-            </div>
-            <div className="form-group">
-                <label htmlFor="senha">Senha</label>
-                <input
-                    type="password"
-                    id="senha"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    required
-                />
-            </div>
-            <button type="submit" className="auth-button">
-                Entrar
-            </button>
-          </form>
-          <div className="auth-links">
-            <Link to="/recuperar-senha">Esqueceu a senha?</Link>
-            <span> | </span>
-            <Link to="/registro">Não tem uma conta? Cadastre-se</Link>
-          </div>
+    <AuthLayout title="Login">
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="email">E-mail</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
-      </div>
-    </div>
+        <div className="form-group">
+          <label htmlFor="senha">Senha</label>
+          <input
+            type="password"
+            id="senha"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-options">
+          <div className="remember-me">
+            <input type="checkbox" id="remember" />
+            <label htmlFor="remember">Lembrar-me</label>
+          </div>
+          <Link to="/recuperar-senha">Esqueci minha senha</Link>
+        </div>
+        <button type="submit">Entrar</button>
+        <p className="auth-redirect">
+          Não tem uma conta? <Link to="/registro">Registre-se</Link>
+        </p>
+      </form>
+    </AuthLayout>
   );
 };
 

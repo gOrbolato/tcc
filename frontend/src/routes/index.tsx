@@ -1,5 +1,5 @@
 
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 
 // Páginas Públicas
@@ -18,6 +18,7 @@ import Perfil from '../pages/user/Perfil';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminUserManagement from '../pages/admin/AdminUserManagement';
 import InstitutionCourseManagement from '../pages/InstitutionCourseManagement';
+import VisualizarAvaliacoes from '../pages/admin/VisualizarAvaliacoes'; // Importa a nova página
 
 const AppRoutes = () => {
   return (
@@ -55,6 +56,10 @@ const AppRoutes = () => {
       <Route 
         path="/admin/gerenciar-instituicoes" 
         element={<ProtectedRoute adminOnly={true}><InstitutionCourseManagement /></ProtectedRoute>} 
+      />
+      <Route 
+        path="/admin/visualizar-avaliacoes" 
+        element={<ProtectedRoute adminOnly={true}><VisualizarAvaliacoes /></ProtectedRoute>} 
       />
 
       {/* Rota de fallback (opcional) */}

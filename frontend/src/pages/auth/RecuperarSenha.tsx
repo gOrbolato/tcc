@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
-import AuthLayout from '../../components/AuthLayout'; // Importando o layout
+import AuthLayout from '../../components/AuthLayout';
 
 const RecuperarSenha = () => {
   const [email, setEmail] = useState('');

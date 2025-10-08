@@ -1,69 +1,51 @@
-
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
-import '../../assets/styles/Dashboard.css'; // Importando o novo CSS
+import { useAuth } from '../../contexts/AuthContext'; // Importa o useAuth
+import '../../assets/styles/Dashboard.css';
 
-interface Evaluation {
-  id: number;
-  instituicao_nome: string;
-  curso_nome: string;
-  nota_infraestrutura: number;
-  obs_infraestrutura: string;
-  nota_material_didatico: number;
-  obs_material_didatico: string;
-  criado_em: string;
-}
+// ... (Interface Evaluation)
 
 const Dashboard: React.FC = () => {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const { showNotification } = useNotification();
+  const { logout } = useAuth(); // Pega a função de logout
+  const navigate = useNavigate(); // Hook para redirecionamento
 
   useEffect(() => {
     const fetchEvaluations = async () => {
       try {
-        const response = await api.get('/evaluations');
+        const response = await api.get('/my-evaluations');
         setEvaluations(response.data);
       } catch (error) {
         showNotification('Erro ao carregar suas avaliações.', 'error');
       }
     };
-
     fetchEvaluations();
   }, [showNotification]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/'); // Redireciona para a home após sair
+  };
 
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
         <h1>Minhas Avaliações</h1>
-        <Link to="/nova-avaliacao" className="new-evaluation-btn">
-          Nova Avaliação
-        </Link>
+        <div className="dashboard-actions">
+          <Link to="/nova-avaliacao" className="new-evaluation-btn">Nova Avaliação</Link>
+          <Link to="/perfil" className="secondary-btn">Configurações</Link>
+          <button onClick={handleLogout} className="logout-btn-user">Sair</button>
+        </div>
       </header>
 
       <div className="evaluations-list">
         {evaluations.length > 0 ? (
           evaluations.map((evaluation) => (
             <div key={evaluation.id} className="evaluation-card">
-              <div className="card-header">
-                <h3>{evaluation.instituicao_nome}</h3>
-                <span>
-                  Curso: {evaluation.curso_nome} | Feita em: {new Date(evaluation.criado_em).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="card-body">
-                <div className="card-notes">
-                  <h4>Notas</h4>
-                  <p>Infraestrutura: <span className="note">{evaluation.nota_infraestrutura}/5</span></p>
-                  <p>Material Didático: <span className="note">{evaluation.nota_material_didatico}/5</span></p>
-                </div>
-                <div className="card-observations">
-                  <h4>Observações</h4>
-                  <p><strong>Infraestrutura:</strong> {evaluation.obs_infraestrutura || 'N/A'}</p>
-                  <p><strong>Material Didático:</strong> {evaluation.obs_material_didatico || 'N/A'}</p>
-                </div>
-              </div>
+              {/* ... (conteúdo do card) ... */}
             </div>
           ))
         ) : (

@@ -1,77 +1,60 @@
 import pool from '../config/database';
 import { OkPacket, RowDataPacket } from 'mysql2';
 
-// Instituições
-export const createInstitution = async (nome: string) => {
-  const [existing] = await pool.query<RowDataPacket[]>('SELECT * FROM Instituicoes WHERE nome = ?', [nome]);
-  if (existing.length > 0) {
-    throw new Error('Instituição já cadastrada.');
-  }
-  const [result] = await pool.query<OkPacket>('INSERT INTO Instituicoes (nome) VALUES (?)', [nome]);
-  return { id: result.insertId, nome };
+// --- LÓGICA DE "OBTER OU CRIAR" ---
+export const findOrCreateInstitution = async (nome: string) => {
+  if (!nome || nome.trim() === '') throw new Error('O nome da instituição não pode ser vazio.');
+  const [existing] = await pool.query<RowDataPacket[]>('SELECT * FROM Instituicoes WHERE nome = ?', [nome.trim()]);
+  if (existing.length > 0) return existing[0];
+  const [result] = await pool.query<OkPacket>('INSERT INTO Instituicoes (nome) VALUES (?)', [nome.trim()]);
+  return { id: result.insertId, nome: nome.trim() };
 };
 
+export const findOrCreateCourse = async (nome: string, instituicao_id: number) => {
+  if (!nome || nome.trim() === '') throw new Error('O nome do curso não pode ser vazio.');
+  const [existing] = await pool.query<RowDataPacket[]>('SELECT * FROM Cursos WHERE nome = ? AND instituicao_id = ?', [nome.trim(), instituicao_id]);
+  if (existing.length > 0) return existing[0];
+  const [result] = await pool.query<OkPacket>('INSERT INTO Cursos (nome, instituicao_id) VALUES (?, ?)', [nome.trim(), instituicao_id]);
+  return { id: result.insertId, nome: nome.trim(), instituicao_id };
+};
+
+// --- FUNÇÕES DE LEITURA ---
 export const getInstitutions = async () => {
-  const [institutions] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Instituicoes');
+  const [institutions] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Instituicoes ORDER BY nome ASC');
   return institutions;
 };
 
+export const getCourses = async () => {
+  const [courses] = await pool.query<RowDataPacket[]>('SELECT c.id, c.nome, c.instituicao_id, i.nome as instituicao_nome FROM Cursos c JOIN Instituicoes i ON c.instituicao_id = i.id ORDER BY c.nome ASC');
+  return courses;
+};
+
+export const getCoursesByInstitutionId = async (id: number) => {
+  const [courses] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Cursos WHERE instituicao_id = ? ORDER BY nome ASC', [id]);
+  return courses;
+};
+
+// --- FUNÇÕES DE MODIFICAÇÃO ---
 export const updateInstitution = async (id: number, nome: string) => {
   const [result] = await pool.query<OkPacket>('UPDATE Instituicoes SET nome = ? WHERE id = ?', [nome, id]);
-  if (result.affectedRows === 0) {
-    throw new Error('Instituição não encontrada.');
-  }
+  if (result.affectedRows === 0) throw new Error('Instituição não encontrada.');
+  return { id, nome };
+};
+
+export const updateCourse = async (id: number, nome: string) => {
+  const [result] = await pool.query<OkPacket>('UPDATE Cursos SET nome = ? WHERE id = ?', [nome, id]);
+  if (result.affectedRows === 0) throw new Error('Curso não encontrado.');
   return { id, nome };
 };
 
 export const deleteInstitution = async (id: number) => {
+  const [courses] = await pool.query<RowDataPacket[]>('SELECT id FROM Cursos WHERE instituicao_id = ?', [id]);
+  if (courses.length > 0) throw new Error('Não é possível excluir uma instituição que ainda possui cursos vinculados.');
   const [result] = await pool.query<OkPacket>('DELETE FROM Instituicoes WHERE id = ?', [id]);
-  if (result.affectedRows === 0) {
-    throw new Error('Instituição não encontrada.');
-  }
-};
-
-// Cursos
-export const createCourse = async (nome: string, instituicao_id: number) => {
-  const [existing] = await pool.query<RowDataPacket[]>('SELECT * FROM Cursos WHERE nome = ? AND instituicao_id = ?', [nome, instituicao_id]);
-  if (existing.length > 0) {
-    throw new Error('Curso já cadastrado para esta instituição.');
-  }
-  const [result] = await pool.query<OkPacket>('INSERT INTO Cursos (nome, instituicao_id) VALUES (?, ?)', [nome, instituicao_id]);
-  return { id: result.insertId, nome, instituicao_id };
-};
-
-export const getCourses = async () => {
-  const [courses] = await pool.query<RowDataPacket[]>('SELECT c.id, c.nome, i.nome as instituicao_nome FROM Cursos c JOIN Instituicoes i ON c.instituicao_id = i.id');
-  return courses;
-};
-
-export const updateCourse = async (id: number, nome: string, instituicao_id: number) => {
-  const [result] = await pool.query<OkPacket>('UPDATE Cursos SET nome = ?, instituicao_id = ? WHERE id = ?', [nome, instituicao_id, id]);
-  if (result.affectedRows === 0) {
-    throw new Error('Curso não encontrado.');
-  }
-  return { id, nome, instituicao_id };
+  if (result.affectedRows === 0) throw new Error('Instituição não encontrada.');
 };
 
 export const deleteCourse = async (id: number) => {
   const [result] = await pool.query<OkPacket>('DELETE FROM Cursos WHERE id = ?', [id]);
-  if (result.affectedRows === 0) {
-    throw new Error('Curso não encontrado.');
-  }
-};
-
-export const getCoursesByInstitutionId = async (id: number) => {
-  const [courses] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Cursos WHERE instituicao_id = ?', [id]);
-  return courses;
-};
-
-export const createInstituicao = async (nome: string) => {
-  const [result] = await pool.query<OkPacket>('INSERT INTO Instituicoes (nome) VALUES (?)', [nome]);
-  return { id: result.insertId, nome };
-};
-
-export const createCurso = async (nome: string, instituicao_id: number) => {
-  const [result] = await pool.query<OkPacket>('INSERT INTO Cursos (nome, instituicao_id) VALUES (?, ?)', [nome, instituicao_id]);
-  return { id: result.insertId, nome, instituicao_id };
+  if (result.affectedRows === 0) throw new Error('Curso não encontrado.');
 };

@@ -27,10 +27,10 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes);
-app.use('/api', evaluationRoutes);
+app.use('/api/evaluations', evaluationRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', consentRoutes);
-app.use('/api', adminUserRoutes);
+app.use('/api/admin', adminUserRoutes);
 app.use('/api', institutionCourseRoutes);
 
 app.listen(port, () => {

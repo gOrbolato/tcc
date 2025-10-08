@@ -1,52 +1,72 @@
 import pool from '../config/database';
-import { OkPacket, RowDataPacket } from 'mysql2';
+import { RowDataPacket } from 'mysql2';
 
-export const submitEvaluation = async (userId: number, evaluationData: any) => {
-  const {
-    instituicao_id,
-    curso_id,
-    nota_infraestrutura,
-    obs_infraestrutura,
-    nota_material_didatico,
-    obs_material_didatico,
-  } = evaluationData;
+interface EvaluationFilters {
+  institutionId?: string;
+  courseId?: string;
+  latitude?: string;
+  longitude?: string;
+  radius?: string;
+}
 
-  const media_final = (nota_infraestrutura + nota_material_didatico) / 2;
-
-  const [result] = await pool.query<OkPacket>(
-    'INSERT INTO Avaliacoes (usuario_id, instituicao_id, curso_id, nota_infraestrutura, obs_infraestrutura, nota_material_didatico, obs_material_didatico, media_final) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [
-      userId,
-      instituicao_id,
-      curso_id,
-      nota_infraestrutura,
-      obs_infraestrutura,
-      nota_material_didatico,
-      obs_material_didatico,
-      media_final,
-    ]
-  );
-
-  return { id: result.insertId, ...evaluationData, media_final };
-};
-
-export const getEvaluations = async (userId: number) => {
-  const [evaluations] = await pool.query<RowDataPacket[]>(
-    `SELECT
-        a.id,
-        a.nota_infraestrutura,
-        a.obs_infraestrutura,
-        a.nota_material_didatico,
-        a.obs_material_didatico,
-        a.media_final,
-        a.criado_em,
-        i.nome AS instituicao_nome,
-        c.nome AS curso_nome
+export const getFilteredEvaluations = async (filters: EvaluationFilters) => {
+  let query = `
+    SELECT 
+      a.id, 
+      a.nota_infraestrutura, 
+      a.obs_infraestrutura, 
+      a.nota_material_didatico, 
+      a.obs_material_didatico, 
+      a.media_final, 
+      a.criado_em, 
+      i.nome AS instituicao_nome, 
+      c.nome AS curso_nome,
+      u.ra AS usuario_ra
+      ${filters.latitude && filters.longitude ? ", ( 6371 * acos( cos( radians(?) ) * cos( radians( i.latitude ) ) * cos( radians( i.longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( i.latitude ) ) ) ) AS distance" : ""}
     FROM Avaliacoes a
     JOIN Instituicoes i ON a.instituicao_id = i.id
     JOIN Cursos c ON a.curso_id = c.id
-    WHERE a.usuario_id = ?
-    ORDER BY a.criado_em DESC`,
+    JOIN Usuarios u ON a.usuario_id = u.id
+    WHERE 1=1
+  `;
+
+  const params: (string | number)[] = [];
+
+  if (filters.latitude && filters.longitude) {
+    params.push(Number(filters.latitude));
+    params.push(Number(filters.longitude));
+    params.push(Number(filters.latitude));
+  }
+
+  if (filters.institutionId) {
+    query += ' AND a.instituicao_id = ?';
+    params.push(filters.institutionId);
+  }
+
+  if (filters.courseId) {
+    query += ' AND a.curso_id = ?';
+    params.push(filters.courseId);
+  }
+
+  if (filters.latitude && filters.longitude && filters.radius) {
+    query += ' HAVING distance < ?';
+    params.push(Number(filters.radius));
+  }
+
+  query += ' ORDER BY a.criado_em DESC';
+
+  const [evaluations] = await pool.query<RowDataPacket[]>(query, params);
+  return evaluations;
+};
+
+export const getEvaluationsByUserId = async (userId: number) => {
+  const [evaluations] = await pool.query<RowDataPacket[]>(
+    `SELECT a.id, a.nota_infraestrutura, a.obs_infraestrutura, a.nota_material_didatico, a.obs_material_didatico, a.media_final, a.criado_em, i.nome AS instituicao_nome, c.nome AS curso_nome 
+     FROM Avaliacoes a 
+     JOIN Instituicoes i ON a.instituicao_id = i.id 
+     JOIN Cursos c ON a.curso_id = c.id 
+     WHERE a.usuario_id = ? 
+     ORDER BY a.criado_em DESC`,
     [userId]
   );
   return evaluations;

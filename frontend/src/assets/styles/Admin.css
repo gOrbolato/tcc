@@ -1,11 +1,144 @@
+
+/* Estilos Gerais do Painel de Administração */
+.admin-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.admin-header {
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.admin-header h1 {
+  font-size: 2.2rem;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.admin-header p {
+  font-size: 1.1rem;
+  color: #555;
+  margin-top: 0.5rem;
+}
 /* Adicionar ao final de Admin.css */
 
+.admin-header .logout-button {
+  margin-top: 1rem;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #dc3545; /* Vermelho para indicar uma ação de "saída" ou "perigo" */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.admin-header .logout-button:hover {
+  background-color: #c82333; /* Vermelho mais escuro ao passar o mouse */
+}
+
+/* Estilos para o Dashboard (Navegação em Cartões) */
+.admin-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.admin-nav-item {
+  display: block;
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-left: 4px solid #007bff;
+}
+
+.admin-nav-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.admin-nav-item h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.4rem;
+  color: #34495e;
+}
+
+.admin-nav-item p {
+  margin: 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+/* Estilos para Seções de Gerenciamento (Tabelas e Formulários) */
+.admin-section {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.admin-section h2 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+/* Estilos para Formulários */
+.admin-form {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.admin-form input,
+.admin-form select {
+  flex-grow: 1;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.admin-form button {
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.admin-form button:hover {
+  background-color: #0056b3;
+}
+
+
+/* Estilos para Tabelas de Gerenciamento */
 .management-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 2rem;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
 }
 
 .management-table th,
@@ -19,6 +152,8 @@
   background-color: #e9ecef;
   color: #495057;
   font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
 }
 
 .management-table tbody tr:hover {
@@ -42,8 +177,156 @@
 
 .action-buttons .delete-btn {
   background-color: #dc3545;
+}/* src/assets/styles/Admin.css */
+
+.admin-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 2rem auto;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.admin-header {
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #dee2e6;
+  display: flex; /* Adicionado */
+  justify-content: space-between; /* Adicionado */
+  align-items: center; /* Adicionado */
+  flex-wrap: wrap; /* Adicionado */
+  gap: 1rem; /* Adicionado */
+}
+
+.admin-header-title {
+  /* Novo container para o título e subtítulo para que fiquem juntos */
+  flex-grow: 1;
+}
+
+.admin-header h1 {
+  font-size: 2.2rem;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.admin-header p {
+  font-size: 1.1rem;
+  color: #555;
+  margin-top: 0.5rem;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #6c757d; /* Cinza escuro */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  /* float: right; foi removido */
+  order: 2; /* Garante que o botão venha depois do título em telas pequenas */
+}
+
+.logout-btn:hover {
+  background-color: #5a6268;
+}
+
+.admin-back-link {
+  display: block;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.admin-back-link:hover {
+  text-decoration: underline;
+}
+
+/* Estilo para a navegação em cartões */
+.admin-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  text-align: center;
+}
+
+.admin-nav-item {
+  display: block;
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #34495e;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  border-left: 5px solid var(--primary-color); /* Usando a cor primária definida em global.css */
+}
+
+.admin-nav-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  color: var(--primary-color);
+}
+
+.admin-nav-item h2 {
+  margin-top: 0;
+  font-size: 1.5rem;
+}
+
+.admin-nav-item p {
+  font-size: 0.9rem;
+  color: #555;
 }
 
 .action-buttons button:hover {
   opacity: 0.8;
+}
+
+.action-buttons button:disabled {
+  background-color: #ccc;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Estilos da Modal de Edição */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  color: #2c3e50;
 }

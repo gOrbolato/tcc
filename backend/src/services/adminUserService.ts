@@ -1,52 +1,35 @@
 import pool from '../config/database';
-import { OkPacket, RowDataPacket } from 'mysql2';
-import bcrypt from 'bcrypt';
+import { RowDataPacket } from 'mysql2';
 
-export const createAdmin = async (adminData: any) => {
-  const { nome, email, senha } = adminData;
+interface UserFilters {
+  ra?: string;
+  institutionId?: string;
+  courseId?: string;
+}
 
-  const [existingAdmins] = await pool.query<RowDataPacket[]>('SELECT * FROM Admins WHERE email = ?', [email]);
-  if (existingAdmins.length > 0) {
-    throw new Error('E-mail de administrador já cadastrado.');
+export const getFilteredUsers = async (filters: UserFilters) => {
+  let query = `
+    SELECT u.id, u.nome, u.email, u.ra, u.is_active, u.instituicao_id, u.curso_id 
+    FROM Usuarios u 
+    WHERE 1=1
+  `;
+  const params: (string | number)[] = [];
+
+  if (filters.ra) {
+    query += ' AND u.ra LIKE ?';
+    params.push(`%${filters.ra}%`);
+  }
+  if (filters.institutionId) {
+    query += ' AND u.instituicao_id = ?';
+    params.push(filters.institutionId);
+  }
+  if (filters.courseId) {
+    query += ' AND u.curso_id = ?';
+    params.push(filters.courseId);
   }
 
-  const hashedPassword = await bcrypt.hash(senha, 10);
+  query += ' ORDER BY u.nome ASC';
 
-  const [result] = await pool.query<OkPacket>(
-    'INSERT INTO Admins (nome, email, senha) VALUES (?, ?, ?)',
-    [nome, email, hashedPassword]
-  );
-
-  const [newAdmin] = await pool.query<RowDataPacket[]>('SELECT id, nome, email FROM Admins WHERE id = ?', [result.insertId]);
-  return newAdmin[0];
-};
-
-export const getAdmins = async () => {
-  const [admins] = await pool.query<RowDataPacket[]>('SELECT id, nome, email FROM Admins');
-  return admins;
-};
-
-export const updateAdmin = async (adminId: number, adminData: any) => {
-  const { nome, email, senha } = adminData;
-  const fieldsToUpdate: any = {};
-
-  if (nome) fieldsToUpdate.nome = nome;
-  if (email) fieldsToUpdate.email = email;
-  if (senha) fieldsToUpdate.senha = await bcrypt.hash(senha, 10);
-
-  if (Object.keys(fieldsToUpdate).length === 0) {
-    throw new Error('Nenhum dado para atualizar.');
-  }
-
-  await pool.query('UPDATE Admins SET ? WHERE id = ?', [fieldsToUpdate, adminId]);
-
-  const [updatedAdmin] = await pool.query<RowDataPacket[]>('SELECT id, nome, email FROM Admins WHERE id = ?', [adminId]);
-  return updatedAdmin[0];
-};
-
-export const deleteAdmin = async (adminId: number) => {
-  const [result] = await pool.query<OkPacket>('DELETE FROM Admins WHERE id = ?', [adminId]);
-  if (result.affectedRows === 0) {
-    throw new Error('Administrador não encontrado.');
-  }
+  const [users] = await pool.query<RowDataPacket[]>(query, params);
+  return users;
 };

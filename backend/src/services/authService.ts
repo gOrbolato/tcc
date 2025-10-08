@@ -26,37 +26,31 @@ export const register = async (userData: any) => {
 };
 
 export const login = async (email: string, senha: string) => {
-  // 1. Tenta encontrar um Admin primeiro
   const [adminRows] = await pool.query<RowDataPacket[]>('SELECT * FROM Admins WHERE email = ?', [email]);
   if (adminRows.length > 0) {
     const admin = adminRows[0];
     const isPasswordValid = await bcrypt.compare(senha, admin.senha);
     if (isPasswordValid) {
-      const token = jwt.sign(
-        { id: admin.id, nome: admin.nome, isAdmin: true },
-        JWT_SECRET,
-        { expiresIn: '1h' }
-      );
+      const token = jwt.sign({ id: admin.id, nome: admin.nome, isAdmin: true }, JWT_SECRET, { expiresIn: '1h' });
       return { token, user: { id: admin.id, nome: admin.nome, email: admin.email, isAdmin: true } };
     }
   }
 
-  // 2. Se não for admin, tenta encontrar um Usuário comum
   const [userRows] = await pool.query<RowDataPacket[]>('SELECT * FROM Usuarios WHERE email = ?', [email]);
   if (userRows.length > 0) {
     const user = userRows[0];
+
+    if (!user.is_active) {
+      throw new Error('Sua conta está trancada e não pode ser acessada.');
+    }
+
     const isPasswordValid = await bcrypt.compare(senha, user.senha);
     if (isPasswordValid) {
-      const token = jwt.sign(
-        { id: user.id, nome: user.nome, isAdmin: false },
-        JWT_SECRET,
-        { expiresIn: '1h' }
-      );
+      const token = jwt.sign({ id: user.id, nome: user.nome, isAdmin: false }, JWT_SECRET, { expiresIn: '1h' });
       return { token, user: { id: user.id, nome: user.nome, email: user.email, isAdmin: false } };
     }
   }
 
-  // 3. Se não encontrou ninguém ou a senha estava errada
   throw new Error('E-mail ou senha inválidos.');
 };
 
@@ -69,13 +63,11 @@ export const forgotPassword = async (email: string) => {
 
   const user = users[0];
   const resetToken = crypto.randomBytes(32).toString('hex');
-  const resetTokenExpiresAt = new Date(Date.now() + 3600000); // 1 hora
+  const resetTokenExpiresAt = new Date(Date.now() + 3600000);
 
   await pool.query('UPDATE Usuarios SET reset_token = ?, reset_token_expires_at = ? WHERE id = ?', [resetToken, resetTokenExpiresAt, user.id]);
 
-  // AÇÃO NECESSÁRIA: Implementar um serviço de envio de e-mail aqui.
-  console.log(`Link de recuperação para ${email}: http://localhost:5173/reset-password/${resetToken}`);
-  
+  console.log(`Link de recuperação para ${email}: http://localhost:5173/resetar-senha/${resetToken}`);
   return resetToken;
 };
 

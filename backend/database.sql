@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS Usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     cpf VARCHAR(14) NOT NULL UNIQUE,
-    ra VARCHAR(20) NOT NULL UNIQUE,
+    ra VARCHAR(20) NOT NULL,
     idade INT NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS Usuarios (
     semestre VARCHAR(50),
     reset_token VARCHAR(255) UNIQUE,
     reset_token_expires_at DATETIME,
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    is_active BOOLEAN NOT NULL DEFAULT TRUE, -- Coluna para controlar o status do usuário
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (ra, instituicao_id) -- Chave única composta
 );
 
 CREATE TABLE IF NOT EXISTS Instituicoes (
