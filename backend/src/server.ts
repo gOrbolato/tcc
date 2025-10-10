@@ -20,6 +20,7 @@ import adminRoutes from './routes/adminRoutes';
 import consentRoutes from './routes/consentRoutes';
 import adminUserRoutes from './routes/adminUserRoutes';
 import institutionCourseRoutes from './routes/institutionCourseRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 app.get('/', (req, res) => {
   res.send('API do Sistema de Avaliação Educacional funcionando!');
@@ -28,10 +29,11 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes);
 app.use('/api/evaluations', evaluationRoutes);
-app.use('/api', adminRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api', consentRoutes);
 app.use('/api/admin', adminUserRoutes);
 app.use('/api', institutionCourseRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);

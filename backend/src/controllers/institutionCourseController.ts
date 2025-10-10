@@ -20,7 +20,8 @@ export const createCourse = async (req: Request, res: Response) => {
 // Para gerenciamento (leitura, atualização, deleção)
 export const getInstitutions = async (req: Request, res: Response) => {
   try {
-    const institutions = await institutionCourseService.getInstitutions();
+    const nameFilter = req.query.nome as string | undefined;
+    const institutions = await institutionCourseService.getInstitutions(nameFilter);
     res.status(200).json(institutions);
   } catch (error: any) { res.status(500).json({ message: error.message }); }
 };

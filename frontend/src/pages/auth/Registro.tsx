@@ -15,7 +15,19 @@ interface FormData {
 
 const Registro: React.FC = () => {
   // --- Estados ---
-  const [formData, setFormData] = useState<FormData>({ /* ... valores iniciais ... */ });
+  const [formData, setFormData] = useState<FormData>({
+    nome: '',
+    cpf: '',
+    ra: '',
+    idade: '',
+    email: '',
+    senha: '',
+    confirmarSenha: '',
+    instituicao_id: '',
+    curso_id: '',
+    periodo: '',
+    semestre: '',
+  });
   const [instituicaoInput, setInstituicaoInput] = useState('');
   const [cursoInput, setCursoInput] = useState('');
   const [instituicoes, setInstituicoes] = useState<any[]>([]);

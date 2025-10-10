@@ -25,6 +25,7 @@ export const getMyEvaluations = async (req: any, res: Response) => {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'Usuário não autenticado.' });
     }
+
     const evaluations = await evaluationService.getEvaluationsByUserId(req.user.id);
     res.status(200).json(evaluations);
   } catch (error: any) {

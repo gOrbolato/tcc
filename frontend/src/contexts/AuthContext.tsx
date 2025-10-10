@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import api from '../services/api';
 import { jwtDecode } from 'jwt-decode';
 
@@ -6,11 +7,13 @@ interface User {
   id: number;
   nome: string;
   isAdmin: boolean;
+  is_active?: boolean; // Adicionado
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading: boolean; // Adicionado
   login: (email: string, senha: string) => Promise<User>;
   logout: () => void;
 }
@@ -19,26 +22,30 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Adicionado
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      try {
-        const decoded: any = jwtDecode(token);
-        // Validação básica para ver se o token não expirou
-        if (decoded.exp * 1000 > Date.now()) {
-          setUser({
-            id: decoded.id,
-            nome: decoded.nome,
-            isAdmin: decoded.isAdmin,
-          });
-        } else {
+    const validateToken = async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          const decoded: any = jwtDecode(token);
+          if (decoded.exp * 1000 > Date.now()) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            const response = await api.get('/perfil');
+            setUser(response.data); // Define o usuário com os dados completos da API
+          } else {
+            localStorage.removeItem('authToken');
+          }
+        } catch (e) {
+          console.error("Erro ao validar token:", e);
           localStorage.removeItem('authToken');
         }
-      } catch (e) {
-        localStorage.removeItem('authToken');
       }
-    }
+      setIsLoading(false);
+    };
+
+    validateToken();
   }, []);
 
   const login = async (email: string, senha: string) => {
@@ -57,7 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

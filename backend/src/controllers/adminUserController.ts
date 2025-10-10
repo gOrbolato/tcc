@@ -11,6 +11,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     const users = await adminUserService.getFilteredUsers(filters);
     res.status(200).json(users);
   } catch (error: any) {
+    console.error("--- ERRO DETALHADO AO BUSCAR USUÁRIOS ---", error);
     res.status(500).json({ message: 'Erro ao buscar usuários.', error: error.message });
   }
 };

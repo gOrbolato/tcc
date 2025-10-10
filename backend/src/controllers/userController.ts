@@ -27,6 +27,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Não autorizado.' });
     }
+    console.log("DEBUG userController: Buscando perfil para userId:", req.user.id);
     const userProfile = await userService.getUserById(req.user.id);
     res.status(200).json(userProfile);
   } catch (error: any) {

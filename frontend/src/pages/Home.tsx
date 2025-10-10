@@ -1,11 +1,81 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import '../assets/styles/Home.css';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api'; // Importa a instância do axios
 import guilhermeOrbolatoFoto from '../assets/images/guilhermeOrbolato.jpg'; 
+
+interface Institution {
+  id: number;
+  nome: string;
+  nota_geral?: number;
+}
+
+interface Course {
+  id: number;
+  nome: string;
+  nota_geral?: number;
+}
 
 const Home: React.FC = () => {
   const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<Institution[]>([]);
+  const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSearchSubmit = async (e: React.FormEvent) => {
+    console.log("DEBUG Home: handleSearchSubmit acionado.");
+    e.preventDefault();
+    if (!searchTerm.trim()) {
+      console.log("DEBUG Home: Termo de busca vazio.");
+      return;
+    }
+
+    setLoading(true);
+    setSelectedInstitution(null); // Limpa a seleção anterior
+    setCourses([]); // Limpa os cursos anteriores
+    console.log("DEBUG Home: Iniciando busca por:", searchTerm);
+    try {
+      const response = await api.get(`/institutions?nome=${encodeURIComponent(searchTerm.trim())}`);
+      setSearchResults(response.data);
+      console.log("DEBUG Home: Resultados da busca:", response.data);
+    } catch (error) {
+      console.error("ERRO Home: Erro ao buscar instituições:", error);
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
+      console.log("DEBUG Home: Busca finalizada, loading false.");
+    }
+  };
+
+  const handleViewCourses = async (institution: Institution) => {
+    setLoading(true);
+    console.log("DEBUG Home: Buscando cursos para instituição:", institution.nome);
+    try {
+      const response = await api.get(`/institutions/${institution.id}/courses`);
+      setSelectedInstitution(institution);
+      setCourses(response.data);
+      console.log("DEBUG Home: Cursos encontrados:", response.data);
+    } catch (error) {
+      console.error("ERRO Home: Erro ao buscar cursos:", error);
+      setCourses([]);
+    } finally {
+      setLoading(false);
+      console.log("DEBUG Home: Busca de cursos finalizada, loading false.");
+    }
+  };
+
+  const handleBackToInstitutions = () => {
+    setSelectedInstitution(null);
+    setCourses([]);
+    console.log("DEBUG Home: Voltando para lista de instituições.");
+  };
+
+  console.log("DEBUG Home: Renderizando. loading:", loading, "searchResults.length:", searchResults.length, "selectedInstitution:", selectedInstitution);
+
   return (
     <main>
       <section className="hero">
@@ -13,26 +83,65 @@ const Home: React.FC = () => {
         <p>Pesquise por instituição, curso ou cidade para ver avaliações. Se é aluno, contribua de forma anônima para a melhoria do seu ensino.</p>
         
         <div className="search-container">
-          <form className="search-form">
+          <form className="search-form" onSubmit={handleSearchSubmit}>
             <input 
               type="text" 
               className="search-input" 
               placeholder="Digite o nome da instituição, curso ou cidade..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button type="submit" className="search-button">
-              Pesquisar
-            </button>
+            <button type="submit" style={{ display: 'none' }} aria-hidden="true"></button>
           </form>
         </div>
-
-        {!user && (
-          <div className="actions-container">
-            <Link to="/login" className="cta-button">
-              Começar a Avaliar
-            </Link>
-          </div>
-        )}
       </section>
+
+      {loading ? (
+        <section className="home-section"><div className="section-content"><p>Carregando...</p></div></section>
+      ) : (
+        <section className="home-section">
+          <div className="section-content">
+            {selectedInstitution ? (
+              // Visão de Cursos da Instituição Selecionada
+              <div className="institution-details">
+                <button onClick={handleBackToInstitutions} className="btn btn-secondary" style={{marginBottom: '1rem'}}>← Voltar para Instituições</button>
+                <h2>Cursos de {selectedInstitution.nome}</h2>
+                <p>Média Geral da Instituição: <strong>{selectedInstitution.nota_geral?.toFixed(2) || 'N/A'}</strong></p>
+                {courses.length > 0 ? (
+                  <div className="course-list">
+                    {courses.map(course => (
+                      <div key={course.id} className="course-item card">
+                        <h3>{course.nome}</h3>
+                        <p>Média do Curso: <strong>{course.nota_geral?.toFixed(2) || 'N/A'}</strong></p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>Nenhum curso encontrado para esta instituição.</p>
+                )}
+              </div>
+            ) : searchResults.length > 0 ? (
+              // Visão de Resultados da Busca de Instituições
+              <div className="institution-results">
+                <h2>Resultados da Busca por "{searchTerm}"</h2>
+                <div className="institution-list">
+                  {searchResults.map(institution => (
+                    <div key={institution.id} className="institution-item card">
+                      <h3>{institution.nome}</h3>
+                      <p>Média Geral: <strong>{Number(institution.nota_geral)?.toFixed(2) || 'N/A'}</strong></p>
+                      <button onClick={() => handleViewCourses(institution)} className="btn btn-primary">Ver Cursos</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : searchTerm.trim() ? (
+              <p>Nenhuma instituição encontrada para "{searchTerm}".</p>
+            ) : (
+              <p>Use a barra de busca para encontrar instituições.</p>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="home-section how-it-works">
         <div className="section-content">
@@ -88,7 +197,7 @@ const Home: React.FC = () => {
               <p>
                 Responsável pela concepção, desenvolvimento e implementação de todas as funcionalidades do sistema, 
                 desde o backend e banco de dados até a interface do usuário no frontend.
-              </p>
+                </p>
             </div>
           </div>
         </div>

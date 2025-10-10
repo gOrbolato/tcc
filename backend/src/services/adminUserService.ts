@@ -21,11 +21,11 @@ export const getFilteredUsers = async (filters: UserFilters) => {
   }
   if (filters.institutionId) {
     query += ' AND u.instituicao_id = ?';
-    params.push(filters.institutionId);
+    params.push(Number(filters.institutionId));
   }
   if (filters.courseId) {
     query += ' AND u.curso_id = ?';
-    params.push(filters.courseId);
+    params.push(Number(filters.courseId));
   }
 
   query += ' ORDER BY u.nome ASC';

@@ -330,3 +330,8 @@
   margin-top: 0;
   color: #2c3e50;
 }
+
+.btn-full-width {
+  width: 100%;
+  margin-top: 1rem;
+}

@@ -13,6 +13,7 @@ import ResetarSenha from '../pages/auth/ResetarSenha';
 import Dashboard from '../pages/user/Dashboard';
 import Avaliacao from '../pages/user/Avaliacao';
 import Perfil from '../pages/user/Perfil';
+import AvaliacaoDetalhes from '../pages/user/AvaliacaoDetalhes'; // Importa a nova página
 
 // Páginas do Administrador
 import AdminDashboard from '../pages/admin/AdminDashboard';
@@ -42,6 +43,10 @@ const AppRoutes = () => {
       <Route 
         path="/perfil" 
         element={<ProtectedRoute><Perfil /></ProtectedRoute>} 
+      />
+      <Route 
+        path="/avaliacao/:id" 
+        element={<ProtectedRoute><AvaliacaoDetalhes /></ProtectedRoute>} 
       />
 
       {/* Rotas Protegidas para Administradores */}

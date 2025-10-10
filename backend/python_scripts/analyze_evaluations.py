@@ -1,65 +1,124 @@
+
 import sys
 import json
+import pandas as pd
 
-def analyze_data(evaluations):
-    if not evaluations:
-        return {"summary": "Nenhuma avaliação para analisar.", "details": []}
+# Palavras-chave para análise de sentimento simples
+NEGATIVE_KEYWORDS = ['ruim', 'péssimo', 'lento', 'antigo', 'quebrado', 'difícil', 'desorganizado', 'insatisfeito', 'problema', 'falta', 'demora', 'ineficiente']
+POSITIVE_KEYWORDS = ['bom', 'ótimo', 'excelente', 'rápido', 'novo', 'funciona', 'fácil', 'organizado', 'satisfeito', 'eficiente']
 
-    total_evaluations = len(evaluations)
-    total_infra = sum(e.get('nota_infraestrutura', 0) for e in evaluations)
-    total_material = sum(e.get('nota_material_didatico', 0) for e in evaluations)
+CATEGORIES = {
+    "infraestrutura": "Infraestrutura",
+    "coordenacao": "Coordenação",
+    "direcao": "Direção",
+    "localizacao": "Localização",
+    "acessibilidade": "Acessibilidade",
+    "equipamentos": "Equipamentos",
+    "biblioteca": "Biblioteca",
+    "didatica": "Didática dos Professores",
+    "conteudo": "Conteúdo do Curso",
+    "dinamica_professores": "Dinâmica dos Professores",
+    "disponibilidade_professores": "Disponibilidade dos Professores",
+}
 
-    avg_infra = total_infra / total_evaluations if total_evaluations > 0 else 0
-    avg_material = total_material / total_evaluations if total_evaluations > 0 else 0
+def analyze_sentiment(comment):
+    if not isinstance(comment, str): return 0
+    comment_lower = comment.lower()
+    neg_count = sum(1 for word in NEGATIVE_KEYWORDS if word in comment_lower)
+    pos_count = sum(1 for word in POSITIVE_KEYWORDS if word in comment_lower)
+    return pos_count - neg_count
 
-    # Exemplo de agregação por instituição/curso
-    aggregated_data = {}
-    for eval_item in evaluations:
-        instituicao = eval_item.get('instituicao_nome', 'Desconhecida')
-        curso = eval_item.get('curso_nome', 'Desconhecido')
-        key = f"{instituicao}-{curso}"
+def generate_suggestions(df_evaluations):
+    suggestions = []
+    
+    if df_evaluations.empty: return suggestions
 
-        if key not in aggregated_data:
-            aggregated_data[key] = {
-                "instituicao": instituicao,
-                "curso": curso,
-                "count": 0,
-                "sum_infra": 0,
-                "sum_material": 0,
-                "obs_infra": [],
-                "obs_material": []
-            }
-        aggregated_data[key]["count"] += 1
-        aggregated_data[key]["sum_infra"] += eval_item.get('nota_infraestrutura', 0)
-        aggregated_data[key]["sum_material"] += eval_item.get('nota_material_didatico', 0)
-        if eval_item.get('obs_infraestrutura'):
-            aggregated_data[key]["obs_infra"].append(eval_item['obs_infraestrutura'])
-        if eval_item.get('obs_material_didatico'):
-            aggregated_data[key]["obs_material"].append(eval_item['obs_material_didatico'])
+    for key, name in CATEGORIES.items():
+        nota_col = f'nota_{key}'
+        comentario_col = f'comentario_{key}'
 
-    detailed_reports = []
-    for key, data in aggregated_data.items():
-        avg_i = data["sum_infra"] / data["count"] if data["count"] > 0 else 0
-        avg_m = data["sum_material"] / data["count"] if data["count"] > 0 else 0
-        detailed_reports.append({
-            "instituicao": data["instituicao"],
-            "curso": data["curso"],
-            "total_avaliacoes": data["count"],
-            "media_infraestrutura": round(avg_i, 2),
-            "media_material_didatico": round(avg_m, 2),
-            "observacoes_infraestrutura": data["obs_infra"],
-            "observacoes_material_didatico": data["obs_material"]
-        })
+        if nota_col not in df_evaluations.columns: continue
 
-    overall_summary = {
-        "total_avaliacoes_geral": total_evaluations,
-        "media_infraestrutura_geral": round(avg_infra, 2),
-        "media_material_didatico_geral": round(avg_material, 2)
+        avg_score = df_evaluations[nota_col].mean()
+        
+        sentiment_score = 0
+        if comentario_col in df_evaluations.columns:
+            sentiment_score = df_evaluations[comentario_col].apply(analyze_sentiment).mean()
+
+        if avg_score < 2.5 and sentiment_score < -0.5: # Nota muito baixa e sentimento negativo forte
+            suggestions.append({
+                "type": "critical",
+                "category": name,
+                "score": round(avg_score, 2),
+                "sentiment": round(sentiment_score, 2),
+                "suggestion": f"**Ponto Crítico em {name}:** A média ({round(avg_score, 2)}) é muito baixa e o sentimento é fortemente negativo. É urgente investigar as causas e implementar um plano de ação corretivo imediato. Priorize a escuta ativa dos alunos para entender os problemas específicos."
+            })
+        elif avg_score < 3.5 and sentiment_score < 0: # Nota média-baixa e sentimento negativo
+            suggestions.append({
+                "type": "attention",
+                "category": name,
+                "score": round(avg_score, 2),
+                "sentiment": round(sentiment_score, 2),
+                "suggestion": f"**Ponto de Atenção em {name}:** A média ({round(avg_score, 2)}) é baixa e o sentimento é negativo. Recomenda-se focar em melhorias nesta área. Analise os comentários para identificar os pontos fracos e planeje ações de médio prazo."
+            })
+        elif avg_score > 4.0 and sentiment_score > 0.5: # Nota alta e sentimento positivo forte
+            suggestions.append({
+                "type": "strong_point",
+                "category": name,
+                "score": round(avg_score, 2),
+                "sentiment": round(sentiment_score, 2),
+                "suggestion": f"**Ponto Forte em {name}:** A média ({round(avg_score, 2)}) é alta e o sentimento é fortemente positivo. Mantenha e promova as boas práticas desta área. Considere usar este sucesso como modelo para outras áreas."
+            })
+        elif avg_score > 3.5 and sentiment_score >= 0: # Nota boa e sentimento neutro/positivo
+            suggestions.append({
+                "type": "good_point",
+                "category": name,
+                "score": round(avg_score, 2),
+                "sentiment": round(sentiment_score, 2),
+                "suggestion": f"**Ponto Positivo em {name}:** A média ({round(avg_score, 2)}) é boa e o sentimento é neutro a positivo. Continue monitorando e buscando pequenas melhorias para manter a qualidade."
+            })
+    return suggestions
+
+def main():
+    # Lê os dados JSON do stdin
+    raw_data = sys.stdin.read()
+    evaluations_list = json.loads(raw_data)
+
+    if not evaluations_list:
+        print(json.dumps({"suggestions": [], "averages_by_question": {}}))
+        return
+
+    df = pd.DataFrame(evaluations_list)
+
+    # Converte colunas de nota para numérico, tratando erros
+    for col in CATEGORIES.keys():
+        nota_col = f'nota_{col}'
+        if nota_col in df.columns:
+            df[nota_col] = pd.to_numeric(df[nota_col], errors='coerce')
+    
+    # Remove linhas onde a média final é NaN após a conversão
+    df.dropna(subset=[f'nota_{list(CATEGORIES.keys())[0]}'], inplace=True) # Usa a primeira nota como base
+
+    if df.empty:
+        print(json.dumps({"suggestions": [], "averages_by_question": {}}))
+        return
+
+    # Calcula médias por pergunta
+    averages_by_question = {}
+    for col in CATEGORIES.keys():
+        nota_col = f'nota_{col}'
+        if nota_col in df.columns:
+            averages_by_question[nota_col] = round(df[nota_col].mean(), 2)
+
+    # Gera sugestões
+    suggestions = generate_suggestions(df)
+
+    # Saída JSON
+    result = {
+        "averages_by_question": averages_by_question,
+        "suggestions": suggestions
     }
+    print(json.dumps(result))
 
-    return {"overall_summary": overall_summary, "detailed_reports": detailed_reports}
-
-if __name__ == "__main__":
-    input_data = json.load(sys.stdin)
-    result = analyze_data(input_data)
-    json.dump(result, sys.stdout, indent=2)
+if __name__ == '__main__':
+    main()

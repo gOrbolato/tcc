@@ -38,8 +38,8 @@ router.delete('/institutions/:id', authenticate, isAdmin, deleteInstitution);
 // Rota para criar um curso (usado no registro)
 router.post('/courses', createCourse);
 
-// Rota para obter todos os cursos (geralmente para admin)
-router.get('/courses', authenticate, isAdmin, getCourses);
+// Rota para obter todos os cursos (pública)
+router.get('/courses', getCourses);
 
 // Rotas de gerenciamento de curso para admins
 router.put('/courses/:id', authenticate, isAdmin, updateCourse);

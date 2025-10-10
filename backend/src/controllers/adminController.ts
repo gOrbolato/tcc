@@ -1,18 +1,35 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { exec } from 'child_process';
+import path from 'path';
 import * as adminService from '../services/adminService';
 
-// Adicionando uma interface para estender o Request do Express
-import { Request as ExpressRequest } from 'express';
-interface AuthRequest extends ExpressRequest {
-  user?: any;
-}
+// Função para gerar e baixar o relatório PDF
+export const downloadReport = (req: Request, res: Response) => {
+  // ... (código existente) ...
+};
 
-export const getReports = async (req: AuthRequest, res: Response) => {
+// Nova função para buscar dados do relatório administrativo
+export const getAdminReports = async (req: Request, res: Response) => {
   try {
-    // Futuramente, verificar se req.user.role é 'admin'
-    const reports = await adminService.generateReports();
-    res.status(200).json(reports);
+    const filters = {
+      institutionId: req.query.institutionId as string | undefined,
+      courseId: req.query.courseId as string | undefined,
+    };
+    const reportData = await adminService.getAdminReportData(filters);
+    res.status(200).json(reportData);
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    console.error("Erro ao buscar dados do relatório administrativo:", error);
+    res.status(500).json({ message: 'Erro ao buscar dados do relatório administrativo.', error: error.message });
+  }
+};
+
+// Nova função para buscar notificações administrativas
+export const getAdminNotifications = async (req: Request, res: Response) => {
+  try {
+    const notifications = await adminService.getPendingNotifications();
+    res.status(200).json(notifications);
+  } catch (error: any) {
+    console.error("Erro ao buscar notificações administrativas:", error);
+    res.status(500).json({ message: 'Erro ao buscar notificações administrativas.', error: error.message });
   }
 };

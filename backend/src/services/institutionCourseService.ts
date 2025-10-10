@@ -19,8 +19,24 @@ export const findOrCreateCourse = async (nome: string, instituicao_id: number) =
 };
 
 // --- FUNÇÕES DE LEITURA ---
-export const getInstitutions = async () => {
-  const [institutions] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Instituicoes ORDER BY nome ASC');
+export const getInstitutions = async (nameFilter?: string) => {
+  let query = `
+    SELECT i.id, i.nome, AVG(a.media_final) AS nota_geral
+    FROM Instituicoes i
+    LEFT JOIN Avaliacoes a ON i.id = a.instituicao_id
+  `;
+  const params: (string | number)[] = [];
+
+  if (nameFilter) {
+    query += ` WHERE i.nome LIKE ?`;
+    params.push(`%${nameFilter}%`);
+  }
+
+  query += `
+    GROUP BY i.id, i.nome
+    ORDER BY i.nome ASC;
+  `;
+  const [institutions] = await pool.query<RowDataPacket[]>(query, params);
   return institutions;
 };
 
@@ -30,7 +46,15 @@ export const getCourses = async () => {
 };
 
 export const getCoursesByInstitutionId = async (id: number) => {
-  const [courses] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Cursos WHERE instituicao_id = ? ORDER BY nome ASC', [id]);
+  const query = `
+    SELECT c.id, c.nome, AVG(a.media_final) AS nota_geral
+    FROM Cursos c
+    LEFT JOIN Avaliacoes a ON c.id = a.curso_id
+    WHERE c.instituicao_id = ?
+    GROUP BY c.id, c.nome
+    ORDER BY c.nome ASC;
+  `;
+  const [courses] = await pool.query<RowDataPacket[]>(query, [id]);
   return courses;
 };
 

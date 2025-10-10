@@ -1,45 +1,106 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import '../../assets/styles/Admin.css';
+import api from '../../services/api';
+import '../../assets/styles/UserArea.css'; // Novo CSS
+
+interface Notification {
+  id: number;
+  nome: string;
+  ra: string;
+  mensagem: string;
+  criado_em: string;
+}
 
 const AdminDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => {
+    if (isAuthLoading) return; // Espera a autenticação carregar
+
+    if (user && user.isAdmin) {
+      const fetchNotifications = async () => {
+        setPageLoading(true);
+        try {
+          const response = await api.get('/admin/notifications');
+          setNotifications(response.data);
+        } catch (error) { 
+          console.error("Erro ao buscar notificações", error);
+          // Tratar erro, talvez redirecionar ou mostrar mensagem
+        } finally {
+          setPageLoading(false);
+        }
+      };
+      fetchNotifications();
+    } else if (!isAuthLoading && !user) {
+      // Se não está carregando a autenticação e não tem usuário, redireciona para login
+      navigate('/login');
+    } else if (!isAuthLoading && user && !user.isAdmin) {
+      // Se não é admin, redireciona para o dashboard normal
+      navigate('/dashboard');
+    }
+  }, [isAuthLoading, user, navigate]);
+
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      await api.patch(`/admin/notifications/${id}/read`);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (error) { console.error("Erro ao marcar como lida", error); }
+  };
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
-  return (
-    <div className="admin-container">
-      <header className="admin-header">
-        <div className="admin-header-title">
-          <h1>Painel do Administrador</h1>
-          {user && <p>Bem-vindo(a), {user.nome}!</p>}
-        </div>
-        <button onClick={handleLogout} className="logout-btn">Sair</button>
-      </header>
+  if (isAuthLoading || pageLoading) {
+    return <section className="page-section"><div className="section-content"><p>Carregando...</p></div></section>;
+  }
 
-      <nav className="admin-nav">
-        <Link to="/admin/gerenciar-usuarios" className="admin-nav-item">
-          <h2>Gerenciar Usuários</h2>
-          <p>Filtre, visualize e edite o status e afiliação dos usuários.</p>
-        </Link>
-        
-        <Link to="/admin/gerenciar-instituicoes" className="admin-nav-item">
-          <h2>Gerenciar Instituições e Cursos</h2>
-          {/* O texto foi alterado nesta linha */}
-          <p>Edite ou remova instituições e cursos existentes na plataforma.</p>
-        </Link>
-        
-        <Link to="/admin/visualizar-avaliacoes" className="admin-nav-item">
-          <h2>Visualizar Avaliações</h2>
-          <p>Acesse e filtre todas as avaliações enviadas pelos alunos.</p>
-        </Link>
-      </nav>
-    </div>
+  return (
+    <section className="page-section">
+      <div className="section-content">
+        <h1>Painel Administrativo</h1>
+        {user && <h2>Bem-vindo(a), {user.nome.split(' ')[0]}!</h2>}
+        <div className="page-actions">
+          <Link to="/admin/gerenciar-usuarios" className="btn btn-secondary">Gerenciar Usuários</Link>
+          <Link to="/admin/gerenciar-instituicoes" className="btn btn-secondary">Gerenciar Instituições</Link>
+          <Link to="/admin/visualizar-avaliacoes" className="btn btn-secondary">Visualizar Avaliações</Link>
+          <button onClick={handleLogout} className="btn btn-danger">Sair</button>
+        </div>
+
+        {notifications.length > 0 && (
+          <div className="card">
+            <h2>Pedidos de Reativação Pendentes</h2>
+            <table className="management-table">
+              <thead><tr><th>Usuário</th><th>RA</th><th>Data do Pedido</th><th>Ação</th></tr></thead>
+              <tbody>
+                {notifications.map(n => (
+                  <tr key={n.id}>
+                    <td>{n.nome}</td>
+                    <td>{n.ra}</td>
+                    <td>{new Date(n.criado_em).toLocaleString()}</td>
+                    <td className="action-buttons">
+                      <Link to="/admin/gerenciar-usuarios" className="btn btn-secondary">Ver Usuário</Link>
+                      <button onClick={() => handleMarkAsRead(n.id)} className="btn btn-primary">Marcar como Lido</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {notifications.length === 0 && (
+          <div className="card" style={{textAlign: 'center'}}>
+            <p>Nenhum pedido de reativação pendente.</p>
+          </div>
+        )}
+      </div>
+    </section>
   );
 };
 
