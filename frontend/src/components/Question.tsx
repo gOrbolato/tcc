@@ -1,24 +1,35 @@
 import React, { useState } from 'react';
+import '../assets/styles/Question.css'; // Importa o CSS específico
 
-const RATING_LABELS = {
-  1: 'Péssimo',
-  2: 'Ruim',
-  3: 'Regular',
-  4: 'Bom',
-  5: 'Excelente',
+interface Answer {
+  nota: number;
+  obs: string;
+}
+
+interface QuestionProps {
+  title: string;
+  onAnswerChange: (answer: Answer) => void;
+}
+
+const RATING_LABELS: { [key: number]: string } = {
+  1: 'Péssimo 😠',
+  2: 'Ruim 🙁',
+  3: 'Regular 😐',
+  4: 'Bom 🙂',
+  5: 'Excelente 😀',
 };
 
-const Question = ({ title, onAnswerChange }) => {
-  const [rating, setRating] = useState(0);
-  const [hover, setHover] = useState(0);
-  const [observation, setObservation] = useState('');
+const Question: React.FC<QuestionProps> = ({ title, onAnswerChange }) => {
+  const [rating, setRating] = useState<number>(0);
+  const [hover, setHover] = useState<number>(0);
+  const [observation, setObservation] = useState<string>('');
 
-  const handleRatingChange = (rate) => {
+  const handleRatingChange = (rate: number) => {
     setRating(rate);
     onAnswerChange({ nota: rate, obs: observation });
   };
 
-  const handleObservationChange = (e) => {
+  const handleObservationChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const obsText = e.target.value;
     setObservation(obsText);
     onAnswerChange({ nota: rating, obs: obsText });
@@ -26,8 +37,19 @@ const Question = ({ title, onAnswerChange }) => {
 
   const currentLabel = RATING_LABELS[hover] || RATING_LABELS[rating] || '';
 
+  const getFaceEmoji = (value: number) => {
+    switch (value) {
+      case 1: return '😠';
+      case 2: return '🙁';
+      case 3: return '😐';
+      case 4: return '🙂';
+      case 5: return '😀';
+      default: return '😐';
+    }
+  };
+
   return (
-    <div className="pergunta-card" style={{marginBottom: '2rem', background: '#fff', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.05)'}}>
+    <div className="question-card">
       <h3>{title}</h3>
       <div className="star-rating">
         {[...Array(5)].map((star, index) => {
@@ -36,18 +58,18 @@ const Question = ({ title, onAnswerChange }) => {
             <button
               type="button"
               key={ratingValue}
-              className={ratingValue <= (hover || rating) ? "star-filled" : "star-empty"}
+              className={ratingValue <= (hover || rating) ? "face-filled" : "face-empty"}
               onClick={() => handleRatingChange(ratingValue)}
               onMouseEnter={() => setHover(ratingValue)}
               onMouseLeave={() => setHover(0)}
             >
-              &#9733;
+              {getFaceEmoji(ratingValue)}
             </button>
           );
         })}
         {currentLabel && <span className="rating-label">{currentLabel}</span>}
       </div>
-      <label style={{fontWeight: 600, fontSize: '0.9rem', color: '#333', marginTop: '1rem', display: 'block'}}>
+      <label className="question-textarea-label">
         Sua opinião descritiva é fundamental para a melhoria contínua:
       </label>
       <textarea 
@@ -55,7 +77,7 @@ const Question = ({ title, onAnswerChange }) => {
         onChange={handleObservationChange}
         required
         maxLength={3000} // Limite de caracteres
-        style={{width: '100%', marginTop: '0.5rem', minHeight: '100px', boxSizing: 'border-box', padding: '8px'}}
+        className="question-textarea"
       />
     </div>
   );

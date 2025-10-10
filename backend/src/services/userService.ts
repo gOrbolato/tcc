@@ -6,9 +6,20 @@ interface UserDetails { instituicao_id?: number; curso_id?: number; is_active?: 
 interface UserProfileData { instituicao_id?: number; curso_id?: number; periodo?: string; ra?: string; is_active?: boolean; }
 // ------------------
 
+export const getAdminById = async (adminId: number) => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    'SELECT id, nome, email FROM Admins WHERE id = ?',
+    [adminId]
+  );
+  if (rows.length === 0) {
+    throw new Error('Administrador não encontrado.');
+  }
+  return { ...rows[0], isAdmin: true };
+};
+
 export const getUserById = async (userId: number) => {
   const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id, nome, email, cpf, ra, idade, instituicao_id, curso_id, periodo, semestre, is_active, isAdmin FROM Usuarios WHERE id = ?',
+    'SELECT id, nome, email, cpf, ra, idade, instituicao_id, curso_id, periodo, semestre, is_active FROM Usuarios WHERE id = ?',
     [userId]
   );
   if (rows.length === 0) {

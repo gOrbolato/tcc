@@ -1,0 +1,26 @@
+.question-textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  min-height: 150px; /* Aumentado */
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.star-rating button {
+  font-size: 2.5rem; /* Aumenta o tamanho do emoji */
+  padding: 0 0.2rem;
+}
+
+.star-rating .face-filled {
+  /* Emojis já são coloridos, mas podemos ajustar o brilho ou sombra */
+  filter: brightness(1.1);
+}
+
+.star-rating .face-empty {
+  /* Emojis já são coloridos, mas podemos ajustar a opacidade */
+  opacity: 0.5;
+}

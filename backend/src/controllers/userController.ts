@@ -4,7 +4,7 @@ import * as userService from '../services/userService';
 
 // Interface para adicionar o objeto 'user' que vem do middleware de autenticação
 interface AuthenticatedRequest extends Request {
-  user?: { id: number };
+  user?: { id: number; isAdmin?: boolean; };
 }
 
 // Função para admin atualizar um usuário
@@ -27,10 +27,16 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Não autorizado.' });
     }
-    console.log("DEBUG userController: Buscando perfil para userId:", req.user.id);
-    const userProfile = await userService.getUserById(req.user.id);
+    console.log("DEBUG userController: Buscando perfil para userId:", req.user.id, "isAdmin:", req.user.isAdmin);
+    let userProfile;
+    if (req.user.isAdmin) {
+      userProfile = await userService.getAdminById(req.user.id);
+    } else {
+      userProfile = await userService.getUserById(req.user.id);
+    }
     res.status(200).json(userProfile);
   } catch (error: any) {
+    console.error("ERRO userController: Erro ao buscar perfil:", error);
     res.status(400).json({ message: error.message });
   }
 };
