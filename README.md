@@ -1,37 +1,41 @@
-
 # Plataforma de Avaliação Educacional
 
 Este projeto é uma aplicação web full-stack projetada para ser uma ponte de comunicação entre alunos e instituições de ensino, permitindo que estudantes avaliem seus cursos e instituições de forma anônima e segura.
 
 ## Visão Geral
 
-A plataforma permite que o público geral pesquise e visualize avaliações sobre instituições e cursos. Alunos podem se cadastrar para submeter suas próprias avaliações, enquanto administradores possuem um painel dedicado para gerenciar usuários, instituições e visualizar relatórios consolidados.
+A plataforma permite que o público geral pesquise e visualize avaliações sobre instituições e cursos diretamente na página inicial. Alunos podem se cadastrar para submeter suas próprias avaliações, enquanto administradores possuem um painel dedicado para gerenciar usuários, instituições e visualizar relatórios consolidados com insights acionáveis.
 
 ## Principais Funcionalidades
 
 ### Para Usuários e Visitantes
-- **Pesquisa Pública:** Busca por instituições, cursos e cidades para visualizar avaliações.
+- **Pesquisa Interativa:** Busca por instituições e cursos diretamente na Home page, exibindo médias e permitindo a navegação entre instituições e seus cursos.
 - **Cadastro de Usuário:** Processo de registro validado para alunos.
 - **Login Unificado:** Um único ambiente de login que redireciona usuários comuns e administradores para seus respectivos painéis.
-- **Submissão de Avaliação:** Formulário detalhado para avaliar a instituição e o curso.
-- **Dashboard do Usuário:** Visualização do histórico de avaliações submetidas.
-- **Recuperação de Senha:** Fluxo seguro de redefinição de senha por e-mail.
+- **Submissão de Avaliação:** Formulário detalhado para avaliar a instituição e o curso, com sistema de votação por carinhas interativas e campo para observações.
+- **Dashboard do Usuário:** Visualização do histórico de avaliações submetidas, com contagem regressiva para a próxima avaliação disponível.
+- **Recuperação de Senha Aprimorada:** Fluxo seguro de redefinição de senha via código enviado por e-mail, com validação e regras de segurança para a nova senha.
 
 ### Para Administradores
-- **Dashboard de Admin:** Painel central com acesso às funcionalidades de gerenciamento.
+- **Dashboard de Admin:** Painel central com acesso às funcionalidades de gerenciamento e visualização de notificações pendentes.
 - **CRUD de Usuários:** Gerenciamento completo (Criar, Ler, Atualizar, Deletar) de usuários da plataforma.
 - **CRUD de Instituições e Cursos:** Gerenciamento de instituições de ensino e seus respectivos cursos.
-- **Visualização de Relatórios:** Acesso a relatórios e análises gerados a partir dos dados das avaliações.
+- **Visualização de Relatórios Detalhados:** Acesso a relatórios e análises gerados a partir dos dados das avaliações, incluindo:
+  - Médias gerais e por pergunta.
+  - Gráficos de barras para visualização das médias.
+  - Sugestões e insights acionáveis gerados por análise de dados (Python), indicando pontos fortes, pontos de atenção e pontos críticos.
+  - Opção de download de relatório em PDF.
 
 ## Melhorias e Refatorações Implementadas
 
 Durante o desenvolvimento, diversas melhorias foram implementadas para garantir a qualidade e estabilidade do código:
 
-- **Correção Crítica de Rotas:** Implementação de um sistema de rotas protegidas (`ProtectedRoute`) e adição de todas as páginas da aplicação, que antes estavam inacessíveis.
-- **Padronização de Chamadas à API:** Substituição de chamadas `fetch` por uma instância padronizada do `axios`, centralizando a lógica de autenticação e tratamento de erros.
-- **Refatoração de Layout:** Criação de um componente reutilizável (`AuthLayout`) para as páginas de autenticação, eliminando duplicação de código e garantindo consistência visual.
-- **Correção de Bugs:** Resolução de múltiplos erros de compilação no backend (funções e importações ausentes) e de um erro crítico no frontend que resultava em uma página em branco.
-- **Consistência de Design:** Unificação dos estilos de tabelas e garantia de que o layout principal (Header/Footer) seja exibido corretamente.
+- **Padronização de Design:** Unificação completa do design de todas as páginas da área do usuário e do administrador, seguindo o padrão visual da página Home (sem header/footer), utilizando um sistema de seções e cards consistente.
+- **Fluxo de Autenticação Robusto:** Correção de bugs de carregamento e redirecionamento em páginas protegidas, garantindo que o estado de autenticação seja sempre verificado antes da renderização do conteúdo.
+- **Integração Python para Análise:** Implementação de um script Python para análise avançada de avaliações, gerando sugestões e insights para o painel administrativo.
+- **Sistema de Avaliação Interativo:** Substituição do sistema de estrelas por carinhas dinâmicas e interativas no formulário de avaliação.
+- **Correção de Bugs Críticos:** Resolução de múltiplos erros de compilação, erros de tipagem (TypeScript), problemas de carregamento infinito e erros de conexão com o backend.
+- **Melhoria na Experiência do Usuário:** Adição de contagem regressiva para o cooldown de avaliações e mensagens mais claras.
 
 ## Medidas de Segurança e Anonimato
 
@@ -51,27 +55,35 @@ A segurança dos dados e o anonimato do usuário são pilares deste projeto.
   - Vite (Build Tool)
   - React Router (Roteamento)
   - Axios (Cliente HTTP)
+  - Chart.js e React-Chartjs-2 (Visualização de Dados)
 
 - **Backend:**
   - Node.js com Express e TypeScript
   - MySQL (`mysql2`)
   - Bcrypt (Hashing de Senhas)
   - JSON Web Token (Autenticação)
+  - Python (Análise de Dados e Geração de Sugestões)
 
 ## Setup e Instalação
 
 1.  **Banco de Dados:**
     - Garanta que você tenha um servidor MySQL rodando.
-    - Crie o banco de dados e as tabelas executando o script do arquivo `backend/database.sql`.
+    - Execute o script do arquivo `backend/database.sql` no seu cliente MySQL para criar as tabelas.
 
 2.  **Backend:**
     - Navegue até a pasta `backend`.
-    - Crie um arquivo `.env` a partir do exemplo fornecido e preencha com suas credenciais.
+    - Crie um arquivo `.env` a partir do exemplo fornecido e preencha com suas credenciais (incluindo `JWT_SECRET`).
     - Rode `npm install` para instalar as dependências.
+    - **Instale as dependências Python:** Navegue até `backend/src/scripts` e rode `py -m pip install -r requirements.txt`.
     - Rode `npm run dev` para iniciar o servidor.
+    - **Crie um usuário administrador:** Navegue até `backend/src/scripts` e rode `ts-node create-admin.ts`. Siga as instruções.
 
 3.  **Frontend:**
     - Em um novo terminal, navegue até a pasta `frontend`.
     - Rode `npm install` para instalar as dependências.
     - Rode `npm run dev` para iniciar o servidor de desenvolvimento.
     - Acesse a URL local fornecida pelo Vite (geralmente `http://localhost:5173`).
+
+## Contribuição
+
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
