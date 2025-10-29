@@ -1,182 +1,202 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
-import '../../assets/styles/UserArea.css';
 
-interface ProfileData {
-  nome: string;
-  email: string;
-  instituicao_id: number | null;
-  curso_id: number | null;
-  periodo: string | null;
-  ra: string;
-  is_active: boolean;
-}
-interface Institution { id: number; nome: string; }
-interface Course { id: number; nome: string; }
+// 1. Importar componentes de layout e formulário
+import {
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  CardHeader,
+  TextField,
+  Button,
+  Box,
+  CircularProgress,
+  Divider,
+} from '@mui/material';
 
 const Perfil: React.FC = () => {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [initialProfile, setInitialProfile] = useState<ProfileData | null>(null);
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isRaEnabled, setIsRaEnabled] = useState(false);
+  const { user, setUser } = useAuth();
   const { showNotification } = useNotification();
-  const { logout, user, isLoading: isAuthLoading } = useAuth();
-  const navigate = useNavigate();
 
-  const fetchProfileData = useCallback(async () => {
-    console.log("DEBUG Perfil: fetchProfileData iniciado.");
-    setPageLoading(true);
-    setError(null);
-    try {
-      const [profileRes, instRes, courseRes] = await Promise.all([
-        api.get('/perfil'),
-        api.get('/institutions'),
-        api.get('/courses')
-      ]);
-      setProfile(profileRes.data);
-      setInitialProfile(profileRes.data);
-      setInstitutions(instRes.data);
-      setCourses(courseRes.data);
-      console.log("DEBUG Perfil: Dados carregados. Profile:", profileRes.data, "Institutions:", instRes.data, "Courses:", courseRes.data);
-    } catch (err) {
-      console.error("ERRO Perfil: Erro ao carregar dados do perfil.", err);
-      showNotification('Erro ao carregar dados do perfil.', 'error');
-      setError('Não foi possível carregar seus dados. Tente novamente mais tarde.');
-    } finally {
-      setPageLoading(false);
-      console.log("DEBUG Perfil: fetchProfileData finalizado, pageLoading false.");
-    }
-  }, [showNotification]);
+  // 2. States separados para os dados do perfil e mudança de senha
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [ra, setRa] = useState('');
+  
+  const [senhaAntiga, setSenhaAntiga] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarNovaSenha, setConfirmarNovaSenha] = useState('');
 
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingPassword, setLoadingPassword] = useState(false);
+
+  // 3. Carregar dados do usuário no state
   useEffect(() => {
-    console.log("DEBUG Perfil: useEffect executado. isAuthLoading:", isAuthLoading, "user:", user);
-    if (isAuthLoading) return; // Espera a autenticação carregar
-
     if (user) {
-      fetchProfileData();
-    } else {
-      console.log("DEBUG Perfil: Usuário não logado, setando pageLoading para false.");
-      setPageLoading(false);
-      navigate('/login'); // Redireciona para login se não houver usuário
+      setNome(user.nome);
+      setEmail(user.email ?? '');
+      setRa(user.ra || ''); // Assumindo que RA pode ser opcional
     }
-  }, [isAuthLoading, user, fetchProfileData, navigate]);
+  }, [user]);
 
-  useEffect(() => {
-    if (profile && initialProfile) {
-      const instChanged = profile.instituicao_id !== initialProfile.instituicao_id;
-      const courseChanged = profile.curso_id !== initialProfile.curso_id;
-      setIsRaEnabled(instChanged && courseChanged);
-    }
-  }, [profile, initialProfile]);
-
-  const handleInputChange = (field: keyof ProfileData, value: any) => {
-    setProfile(prev => prev ? { ...prev, [field]: value } : null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
+    setLoadingProfile(true);
     try {
-      const response = await api.put('/perfil', {
-        instituicao_id: profile.instituicao_id,
-        curso_id: profile.curso_id,
-        periodo: profile.periodo,
-        ra: isRaEnabled ? profile.ra : undefined,
-      });
-      setInitialProfile(response.data);
-      setProfile(response.data);
+      const response = await api.put('/user/profile', { nome, email, ra });
+      setUser(response.data.user); // Atualiza o usuário no AuthContext
       showNotification('Perfil atualizado com sucesso!', 'success');
-    } catch (error: any) { 
-      console.error("ERRO Perfil: Erro ao atualizar perfil.", error);
-      showNotification(error.response?.data?.message || 'Erro ao atualizar perfil.', 'error'); 
+    } catch (error) {
+      showNotification('Erro ao atualizar perfil.', 'error');
+    } finally {
+      setLoadingProfile(false);
     }
   };
 
-  const handleTrancarCurso = async () => {
-    if (window.confirm('Tem certeza que deseja trancar seu curso? Sua conta será desativada e você só poderá reativá-la no próximo período de rematrícula (Janeiro/Fevereiro ou Julho/Agosto).')) {
-      try {
-        await api.put('/perfil', { is_active: false });
-        showNotification('Sua matrícula foi trancada com sucesso.', 'success');
-        logout();
-        navigate('/');
-      } catch (error) { 
-        console.error("ERRO Perfil: Erro ao trancar matrícula.", error);
-        showNotification('Erro ao trancar sua matrícula.', 'error'); 
-      }
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (novaSenha !== confirmarNovaSenha) {
+      showNotification('As novas senhas não coincidem.', 'error');
+      return;
+    }
+    setLoadingPassword(true);
+    try {
+      await api.put('/user/change-password', { senhaAntiga, novaSenha });
+      showNotification('Senha alterada com sucesso!', 'success');
+      // Limpar campos de senha
+      setSenhaAntiga('');
+      setNovaSenha('');
+      setConfirmarNovaSenha('');
+    } catch (error) {
+      showNotification('Erro ao alterar senha. Verifique sua senha antiga.', 'error');
+    } finally {
+      setLoadingPassword(false);
     }
   };
 
-  if (isAuthLoading || pageLoading) {
-    return <section className="page-section"><div className="section-content"><p>Carregando...</p></div></section>;
+  if (!user) {
+    return (
+      <Container sx={{ textAlign: 'center', mt: 5 }}>
+        <CircularProgress />
+      </Container>
+    );
   }
 
-  if (error) return <section className="page-section"><div className="section-content"><p style={{color: 'red'}}>{error}</p></div></section>;
-  if (!profile) return <section className="page-section"><div className="section-content"><p>Não foi possível encontrar o perfil.</p></div></section>;
-
   return (
-    <section className="page-section">
-      <div className="section-content">
-        <h1>Configurações do Perfil</h1>
-        <div className="page-actions">
-          <Link to="/dashboard" className="btn btn-secondary">Voltar ao Dashboard</Link>
-        </div>
-        <div className="card">
-          <h2>Meus Dados Acadêmicos</h2>
-          {!profile.is_active && (
-            <div className="alert alert-warning" style={{marginBottom: '1.5rem'}}>
-              <p>Sua matrícula está trancada. Para reativá-la, entre em contato com a administração.</p>
-            </div>
-          )}
-          <p><strong>Nome:</strong> {profile.nome}</p>
-          <p><strong>Email:</strong> {profile.email}</p>
-          <form onSubmit={handleSubmit} style={{marginTop: '2rem'}}>
-            <div className="form-group">
-              <label htmlFor="instituicao">Instituição</label>
-              <select id="instituicao" value={profile.instituicao_id || ''} onChange={(e) => handleInputChange('instituicao_id', Number(e.target.value))}>
-                <option value="">Selecione uma instituição</option>
-                {institutions.map(i => <option key={i.id} value={i.id}>{i.nome}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="curso">Curso</label>
-              <select id="curso" value={profile.curso_id || ''} onChange={(e) => handleInputChange('curso_id', Number(e.target.value))}>
-                <option value="">Selecione um curso</option>
-                {courses.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="periodo">Período</label>
-              <select id="periodo" value={profile.periodo || ''} onChange={(e) => handleInputChange('periodo', e.target.value)}>
-                <option value="">Selecione um período</option>
-                <option value="Matutino">Matutino</option>
-                <option value="Vespertino">Vespertino</option>
-                <option value="Noturno">Noturno</option>
-                <option value="Integral">Integral</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="ra">RA (Registro Acadêmico)</label>
-              <input id="ra" type="text" value={profile.ra} onChange={(e) => handleInputChange('ra', e.target.value)} disabled={!isRaEnabled} />
-              {!isRaEnabled && <p style={{fontSize: '0.8rem', color: '#666', marginTop: '0.5rem'}}>O RA só pode ser alterado se você mudar de instituição e de curso.</p>}
-            </div>
-            <button type="submit" className="btn btn-primary">Salvar Alterações</button>
-          </form>
-        </div>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Meu Perfil
+      </Typography>
+      
+      {/* 4. Usar <Card> para os dados do perfil */}
+      <Card sx={{ mb: 4 }}>
+        <CardHeader title="Informações Pessoais" />
+        <Divider />
+        <CardContent>
+          <Box component="form" onSubmit={handleProfileSubmit} sx={{ display: 'grid', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="Nome Completo"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              disabled={loadingProfile}
+            />
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <TextField
+                fullWidth
+                label="E-mail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loadingProfile}
+              />
+              <TextField
+                fullWidth
+                label="RA (Registro Acadêmico)"
+                value={ra}
+                onChange={(e) => setRa(e.target.value)}
+                disabled={loadingProfile}
+              />
+            </Box>
+            <Box sx={{ position: 'relative' }}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loadingProfile}
+                fullWidth
+              >
+                Salvar Informações
+              </Button>
+              {loadingProfile && <CircularProgress size={24} sx={spinnerSx} />}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
-        <div className="card" style={{borderColor: '#dc3545'}}>
-          <h2>Zona de Perigo</h2>
-          <p>A ação abaixo é irreversível e só pode ser desfeita no próximo período de rematrícula.</p>
-          <button onClick={handleTrancarCurso} className="btn btn-danger">Trancar Curso</button>
-        </div>
-      </div>
-    </section>
+      {/* 5. Usar outro <Card> para a mudança de senha */}
+      <Card>
+        <CardHeader title="Alterar Senha" />
+        <Divider />
+        <CardContent>
+          <Box component="form" onSubmit={handlePasswordSubmit} sx={{ display: 'grid', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="Senha Antiga"
+              type="password"
+              value={senhaAntiga}
+              onChange={(e) => setSenhaAntiga(e.target.value)}
+              disabled={loadingPassword}
+              required
+            />
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Nova Senha"
+                type="password"
+                value={novaSenha}
+                onChange={(e) => setNovaSenha(e.target.value)}
+                disabled={loadingPassword}
+                required
+              />
+              <TextField
+                fullWidth
+                label="Confirmar Nova Senha"
+                type="password"
+                value={confirmarNovaSenha}
+                onChange={(e) => setConfirmarNovaSenha(e.target.value)}
+                disabled={loadingPassword}
+                required
+              />
+            </Box>
+            <Box sx={{ position: 'relative' }}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="secondary"
+                disabled={loadingPassword}
+                fullWidth
+              >
+                Alterar Senha
+              </Button>
+              {loadingPassword && <CircularProgress size={24} sx={spinnerSx} />}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
+};
+
+// 6. (Opcional) Estilo para o spinner do botão
+const spinnerSx = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  marginTop: '-12px',
+  marginLeft: '-12px',
 };
 
 export default Perfil;

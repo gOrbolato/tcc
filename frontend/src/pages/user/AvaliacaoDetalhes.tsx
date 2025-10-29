@@ -1,75 +1,110 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+// src/pages/user/AvaliacaoDetalhes.tsx
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import api from '../../services/api';
-import '../../assets/styles/UserArea.css';
+import { useNotification } from '../../contexts/NotificationContext';
+import {
+  Container,
+  Paper,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  CircularProgress,
+  Box,
+} from '@mui/material';
 
-const questionMap: { [key: string]: string } = {
-  nota_infraestrutura: 'Infraestrutura geral',
-  nota_coordenacao: 'Coordenação',
-  nota_direcao: 'Direção',
-  nota_localizacao: 'Localização',
-  nota_acessibilidade: 'Acessibilidade',
-  nota_equipamentos: 'Equipamentos',
-  nota_biblioteca: 'Biblioteca',
-  nota_didatica: 'Didática dos professores',
-  nota_conteudo: 'Conteúdo das matérias',
-  nota_dinamica_professores: 'Dinâmica dos professores',
-  nota_disponibilidade_professores: 'Disponibilidade dos professores',
-};
+// 1. Definir tipos
+interface Resposta {
+  questaoTexto: string;
+  resposta: string;
+  tipo: 'ESCOLHA_UNICA' | 'TEXTO_LIVRE';
+}
+
+interface AvaliacaoDetalhes {
+  disciplina: string;
+  professor: string;
+  respostas: Resposta[];
+}
 
 const AvaliacaoDetalhes: React.FC = () => {
-  const [evaluation, setEvaluation] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const { id } = useParams<{ id: string }>();
+  const [detalhes, setDetalhes] = useState<AvaliacaoDetalhes | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { showNotification } = useNotification();
 
   useEffect(() => {
-    const fetchDetails = async () => {
-      setLoading(true);
+    const fetchDetalhes = async () => {
       try {
-        const response = await api.get(`/evaluations/${id}`);
-        setEvaluation(response.data);
-      } catch (error) { console.error(error); }
-      finally { setLoading(false); }
+        const response = await api.get(`/evaluations/details/${id}`); // Ajuste a rota
+        setDetalhes(response.data);
+      } catch (error) {
+        showNotification('Erro ao carregar detalhes da avaliação', 'error');
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchDetails();
-  }, [id]);
+    fetchDetalhes();
+  }, [id, showNotification]);
 
   if (loading) {
-    return <section className="page-section"><div className="section-content"><p>Carregando...</p></div></section>;
+    return (
+      <Container sx={{ textAlign: 'center', mt: 5 }}>
+        <CircularProgress />
+      </Container>
+    );
   }
 
-  if (!evaluation) return <section className="page-section"><div className="section-content"><p>Avaliação não encontrada.</p></div></section>;
-
-  const answers = Object.keys(questionMap).map(key => ({
-    title: questionMap[key],
-    score: evaluation[key],
-    observation: evaluation[key.replace('nota_', 'comentario_')]
-  }));
+  if (!detalhes) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h6" color="error">
+          Não foi possível carregar os detalhes da avaliação.
+        </Typography>
+      </Container>
+    );
+  }
 
   return (
-    <section className="page-section">
-      <div className="section-content">
-        <h1>Detalhes da Avaliação</h1>
-        <div className="page-actions">
-          <Link to="/dashboard" className="btn btn-secondary">Voltar</Link>
-        </div>
-        <div className="card">
-          <h2>Avaliação de {new Date(evaluation.criado_em).toLocaleDateString()}</h2>
-          <p><strong>Média Final:</strong> {Number(evaluation.media_final).toFixed(2)}</p>
-          <div className="answers-grid">
-            {answers.map(item => (
-              item.score && (
-                <div key={item.title} className="answer-item">
-                  <h4>{item.title}</h4>
-                  <p className="score">{item.score}/5</p>
-                  {item.observation && <p className="observation">\"{item.observation}\"</p>}
-                </div>
-              )
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
+    // 2. Usar Container e Paper para um layout limpo
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 } }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          {detalhes.disciplina}
+        </Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
+          Professor(a): {detalhes.professor}
+        </Typography>
+        <Divider />
+        
+        {/* 3. Usar <List> para as perguntas e respostas */}
+        <List>
+          {detalhes.respostas.map((r, index) => (
+            <React.Fragment key={index}>
+              <ListItem sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                {/* Pergunta */}
+                <ListItemText
+                  primary={
+                    <Typography variant="h6" component="p" gutterBottom>
+                      {r.questaoTexto}
+                    </Typography>
+                  }
+                  // Resposta
+                  secondary={
+                    <Typography variant="body1" color="text.primary">
+                      {r.resposta}
+                    </Typography>
+                  }
+                  sx={{ width: '100%' }}
+                />
+              </ListItem>
+              {index < detalhes.respostas.length - 1 && <Divider component="li" />}
+            </React.Fragment>
+          ))}
+        </List>
+      </Paper>
+    </Container>
   );
 };
 

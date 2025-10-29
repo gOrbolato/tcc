@@ -1,85 +1,81 @@
-import React, { useState } from 'react';
-import '../assets/styles/Question.css'; // Importa o CSS específico
+import React from 'react';
+// 1. Importar componentes de Formulário e Tipografia
+import {
+  FormControl,
+  FormControlLabel,
+  RadioGroup,
+  Radio,
+  Typography,
+  TextField,
+  Box,
+  FormLabel,
+} from '@mui/material';
 
-interface Answer {
-  nota: number;
-  obs: string;
-}
-
+// 2. Definir os tipos para as props
 interface QuestionProps {
-  title: string;
-  onAnswerChange: (answer: Answer) => void;
+  question: {
+    id: number;
+    texto: string;
+    tipo: 'ESCOLHA_UNICA' | 'TEXTO_LIVRE';
+    opcoes?: string[]; // Opcional para tipo 'TEXTO_LIVRE'
+  };
+  resposta: string;
+  onChange: (resposta: string) => void;
+  isSubmitting: boolean;
 }
 
-const RATING_LABELS: { [key: number]: string } = {
-  1: 'Péssimo 😠',
-  2: 'Ruim 🙁',
-  3: 'Regular 😐',
-  4: 'Bom 🙂',
-  5: 'Excelente 😀',
-};
+const Question: React.FC<QuestionProps> = ({ question, resposta, onChange, isSubmitting }) => {
+  const { texto, tipo, opcoes } = question;
 
-const Question: React.FC<QuestionProps> = ({ title, onAnswerChange }) => {
-  const [rating, setRating] = useState<number>(0);
-  const [hover, setHover] = useState<number>(0);
-  const [observation, setObservation] = useState<string>('');
-
-  const handleRatingChange = (rate: number) => {
-    setRating(rate);
-    onAnswerChange({ nota: rate, obs: observation });
-  };
-
-  const handleObservationChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const obsText = e.target.value;
-    setObservation(obsText);
-    onAnswerChange({ nota: rating, obs: obsText });
-  };
-
-  const currentLabel = RATING_LABELS[hover] || RATING_LABELS[rating] || '';
-
-  const getFaceEmoji = (value: number) => {
-    switch (value) {
-      case 1: return '😠';
-      case 2: return '🙁';
-      case 3: return '😐';
-      case 4: return '🙂';
-      case 5: return '😀';
-      default: return '😐';
+  const renderQuestionType = () => {
+    switch (tipo) {
+      case 'ESCOLHA_UNICA':
+        return (
+          // 3. Usar FormControl e RadioGroup para as opções
+          <FormControl component="fieldset" margin="normal">
+            <FormLabel component="legend">{texto}</FormLabel>
+            <RadioGroup
+              aria-label={texto}
+              name={String(question.id)}
+              value={resposta}
+              onChange={(e) => onChange(e.target.value)}
+            >
+              {opcoes?.map((opcao, index) => (
+                <FormControlLabel
+                  key={index}
+                  value={String(index + 1)} // Assumindo que o valor é '1', '2', etc.
+                  control={<Radio disabled={isSubmitting} />}
+                  label={opcao}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
+        );
+      case 'TEXTO_LIVRE':
+        return (
+          // 4. Usar TextField para respostas abertas
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            label={texto}
+            value={resposta}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={isSubmitting}
+            margin="normal"
+          />
+        );
+      default:
+        return <Typography>Tipo de questão não suportado.</Typography>;
     }
   };
 
+  // 5. Usar Box para encapsular o componente
   return (
-    <div className="question-card">
-      <h3>{title}</h3>
-      <div className="star-rating">
-        {[...Array(5)].map((star, index) => {
-          const ratingValue = index + 1;
-          return (
-            <button
-              type="button"
-              key={ratingValue}
-              className={ratingValue <= (hover || rating) ? "face-filled" : "face-empty"}
-              onClick={() => handleRatingChange(ratingValue)}
-              onMouseEnter={() => setHover(ratingValue)}
-              onMouseLeave={() => setHover(0)}
-            >
-              {getFaceEmoji(ratingValue)}
-            </button>
-          );
-        })}
-        {currentLabel && <span className="rating-label">{currentLabel}</span>}
-      </div>
-      <label className="question-textarea-label">
-        Sua opinião descritiva é fundamental para a melhoria contínua:
-      </label>
-      <textarea 
-        placeholder="Descreva os pontos positivos e/ou negativos..."
-        onChange={handleObservationChange}
-        required
-        maxLength={3000} // Limite de caracteres
-        className="question-textarea"
-      />
-    </div>
+    <Box sx={{ mb: 3, p: 3, border: '1px solid #ddd', borderRadius: '8px' }}>
+      {renderQuestionType()}
+    </Box>
   );
 };
 

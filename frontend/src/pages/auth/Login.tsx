@@ -1,9 +1,25 @@
-
+// src/pages/auth/Login.tsx
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import AuthLayout from '../../components/AuthLayout';
+import { motion } from 'framer-motion';
+
+// 1. Importar componentes do MUI
+import {
+  TextField,
+  Button,
+  FormControlLabel,
+  Checkbox,
+  Link,
+  Grid,
+  Box,
+  Typography,
+} from '@mui/material';
+
+// 2. Importar o Link do React Router para o MUI
+import { Link as RouterLink } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -29,39 +45,70 @@ const Login: React.FC = () => {
 
   return (
     <AuthLayout title="Login">
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="email">E-mail</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+      {/* 3. Usar Box ao invés de <form> simples para ter acesso ao 'sx' prop */}
+      <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+        {/* 4. Substituir <div class="form-group">, <label> e <input> 
+             por um único <TextField> 
+        */}
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="email"
+          label="Endereço de E-mail"
+          name="email"
+          autoComplete="email"
+          autoFocus
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          name="senha"
+          label="Senha"
+          type="password"
+          id="senha"
+          autoComplete="current-password"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+        />
+        
+        {/* 5. Substituir as opções de formulário */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 1 }}>
+          <FormControlLabel
+            control={<Checkbox value="remember" color="primary" />}
+            label="Lembrar-me"
           />
-        </div>
-        <div className="form-group">
-          <label htmlFor="senha">Senha</label>
-          <input
-            type="password"
-            id="senha"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-options">
-          <div className="remember-me">
-            <input type="checkbox" id="remember" />
-            <label htmlFor="remember">Lembrar-me</label>
-          </div>
-          <Link to="/recuperar-senha">Esqueci minha senha</Link>
-        </div>
-        <button type="submit">Entrar</button>
-        <p className="auth-redirect">
-          Não tem uma conta? <Link to="/registro">Registre-se</Link>
-        </p>
-      </form>
+          <Link component={RouterLink} to="/recuperar-senha" variant="body2">
+            Esqueci minha senha
+          </Link>
+        </Box>
+        
+        {/* 6. Substituir <button> por <Button> */}
+        <motion.div
+          whileHover={{ scale: 1.02 }} // Efeito sutil ao passar o mouse
+          whileTap={{ scale: 0.98 }}   // Efeito ao clicar
+        >
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2, py: 1.5 }}
+          >
+            Entrar
+          </Button>
+        </motion.div>
+        
+        {/* 7. Substituir o redirecionamento */}
+        <Typography variant="body2" align="center">
+          Não tem uma conta?{' '}
+          <Link component={RouterLink} to="/registro" variant="body2">
+            Registre-se
+          </Link>
+        </Typography>
+      </Box>
     </AuthLayout>
   );
 };

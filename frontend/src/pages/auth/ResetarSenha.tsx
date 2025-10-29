@@ -1,86 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../../services/api';
-import { useNotification } from '../../contexts/NotificationContext';
+// src/pages/auth/ResetarSenha.tsx
+import React, { useState } from 'react';
+import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import AuthLayout from '../../components/AuthLayout';
+import { useNotification } from '../../contexts/NotificationContext';
+import api from '../../services/api';
+
+// 1. Importar componentes MUI
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+  Link,
+} from '@mui/material';
 
 const ResetarSenha: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.state && location.state.email && location.state.code) {
-      setEmail(location.state.email);
-      setCode(location.state.code);
-    } else {
-      showNotification('Acesso inválido à página de redefinição de senha.', 'error');
-      navigate('/recuperar-senha');
-    }
-  }, [location.state, navigate, showNotification]);
-
-  const validatePassword = (password: string) => {
-    const hasNumber = /[0-9]/.test(password);
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    const isLongEnough = password.length >= 8;
-    return hasNumber && hasUpperCase && hasSpecialChar && isLongEnough;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
+    if (senha !== confirmarSenha) {
       showNotification('As senhas não coincidem.', 'error');
       return;
     }
-    if (!validatePassword(newPassword)) {
-      showNotification('A senha deve ter pelo menos 8 caracteres, 1 número, 1 letra maiúscula e 1 caractere especial.', 'error');
-      return;
-    }
+    setLoading(true);
     try {
-      await api.post('/auth/reset-password', { email, code, newPassword });
-      showNotification('Sua senha foi redefinida com sucesso!', 'success');
+      await api.post('/auth/resetar-senha', { token, novaSenha: senha });
+      showNotification('Senha redefinida com sucesso! Você já pode fazer login.', 'success');
       navigate('/login');
-    } catch (error: any) {
-      showNotification(error.response?.data?.message || 'Erro ao redefinir a senha.', 'error');
+    } catch (error) {
+      showNotification('Token inválido ou expirado.', 'error');
+      setLoading(false);
     }
   };
 
   return (
+    // 2. Usar o AuthLayout que já criamos
     <AuthLayout title="Redefinir Senha">
-      <form onSubmit={handleSubmit}>
-        <p style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#555' }}>
-          Digite sua nova senha. Ela deve ter pelo menos 8 caracteres, 1 número, 1 letra maiúscula e 1 caractere especial.
-        </p>
-        <div className="form-group">
-          <label htmlFor="newPassword">Nova Senha</label>
-          <input
-            type="password"
-            id="newPassword"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="confirmPassword">Confirmar Nova Senha</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Salvar Nova Senha</button>
-        <p className="auth-redirect">
-          Lembrou sua senha? <Link to="/login">Faça login</Link>
-        </p>
-      </form>
+      <Typography component="p" align="center" sx={{ mb: 2 }}>
+        Digite sua nova senha.
+      </Typography>
+      {/* 3. Usar Box como formulário */}
+      <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          name="senha"
+          label="Nova Senha"
+          type="password"
+          id="senha"
+          autoComplete="new-password"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          disabled={loading}
+          autoFocus
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          name="confirmarSenha"
+          label="Confirmar Nova Senha"
+          type="password"
+          id="confirmarSenha"
+          autoComplete="new-password"
+          value={confirmarSenha}
+          onChange={(e) => setConfirmarSenha(e.target.value)}
+          disabled={loading}
+        />
+        
+        {/* 4. Botão com loading */}
+        <Box sx={{ position: 'relative', mt: 3, mb: 2 }}>
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ py: 1.5 }}
+            disabled={loading}
+          >
+            Redefinir Senha
+          </Button>
+          {loading && (
+            <CircularProgress
+              size={24}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: '-12px',
+                marginLeft: '-12px',
+              }}
+            />
+          )}
+        </Box>
+        <Typography variant="body2" align="center">
+          <Link component={RouterLink} to="/login" variant="body2">
+            Voltar para o Login
+          </Link>
+        </Typography>
+      </Box>
     </AuthLayout>
   );
 };

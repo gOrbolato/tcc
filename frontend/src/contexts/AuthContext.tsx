@@ -8,6 +8,8 @@ interface User {
   nome: string;
   isAdmin: boolean;
   is_active?: boolean; // Adicionado
+  email?: string;
+  ra?: string;
 }
 
 interface AuthContextType {
@@ -16,6 +18,8 @@ interface AuthContextType {
   isLoading: boolean; // Adicionado
   login: (email: string, senha: string) => Promise<User>;
   logout: () => void;
+  // Expose the setter so pages can update the user (e.g. Perfil)
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,7 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

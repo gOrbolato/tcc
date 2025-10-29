@@ -1,33 +1,46 @@
-
+// src/routes/ProtectedRoute.tsx
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Box, CircularProgress } from '@mui/material';
 
 interface ProtectedRouteProps {
-  children: JSX.Element;
   adminOnly?: boolean;
+  children?: React.ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
-  const { user, isLoading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ adminOnly = false, children }) => {
+  const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
-  console.log("DEBUG ProtectedRoute: isLoading=", isLoading, "user=", user, "adminOnly=", adminOnly);
-
   if (isLoading) {
-    return <section className="page-section"><div className="section-content"><p>Carregando autenticação...</p></div></section>;
+    // 1. Usar CircularProgress do MUI para o estado de loading
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: 'calc(100vh - 200px)', // Altura da tela menos header/footer
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
-  if (!user) {
-    console.log("DEBUG ProtectedRoute: Usuário não logado, redirecionando para /login");
+  // 2. Lógica de autenticação
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (adminOnly && !user.isAdmin) {
-    console.log("DEBUG ProtectedRoute: Usuário não é admin, redirecionando para /dashboard");
-    return <Navigate to="/dashboard" replace />;
+  // 3. Lógica de Admin
+  if (adminOnly && !user?.isAdmin) {
+    return <Navigate to="/dashboard" replace />; // Redireciona se não for admin
   }
 
-  console.log("DEBUG ProtectedRoute: Acesso permitido.");
-  return children;
+  // If children are provided, render them (used in routes as a wrapper). Otherwise render <Outlet />.
+  return <>{children ?? <Outlet />}</>;
 };
+
+export default ProtectedRoute;

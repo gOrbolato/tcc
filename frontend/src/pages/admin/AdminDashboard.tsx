@@ -1,106 +1,101 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import api from '../../services/api';
-import '../../assets/styles/UserArea.css'; // Novo CSS
 
-interface Notification {
-  id: number;
-  nome: string;
-  ra: string;
-  mensagem: string;
-  criado_em: string;
-}
+// 1. Importar componentes de Layout e Cards do MUI
+import {
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  CardActions,
+  Box,
+  Icon,
+} from '@mui/material';
+
+// 2. Importar Ícones para os cards
+import PeopleIcon from '@mui/icons-material/People';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import SchoolIcon from '@mui/icons-material/School';
+import BarChartIcon from '@mui/icons-material/BarChart';
+
+// 3. (Opcional) Criar um tipo para os cards para facilitar
+type DashboardCardProps = {
+  title: string;
+  description: string;
+  link: string;
+  icon: React.ReactElement;
+};
+
+// 4. Componente de Card reutilizável
+const DashboardCard: React.FC<DashboardCardProps> = ({ title, description, link, icon }) => (
+  <Box sx={{ width: '100%' }}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flexGrow: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Icon color="primary" sx={{ mr: 1.5, fontSize: '2.5rem' }}>
+            {icon}
+          </Icon>
+          <Typography variant="h5" component="h2">
+            {title}
+          </Typography>
+        </Box>
+        <Typography color="text.secondary">
+          {description}
+        </Typography>
+      </CardContent>
+      <CardActions>
+        <Button size="small" component={RouterLink} to={link}>
+          Acessar
+        </Button>
+      </CardActions>
+    </Card>
+  </Box>
+);
 
 const AdminDashboard: React.FC = () => {
-  const { user, logout, isLoading: isAuthLoading } = useAuth();
-  const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
-
-  useEffect(() => {
-    if (isAuthLoading) return; // Espera a autenticação carregar
-
-    if (user && user.isAdmin) {
-      const fetchNotifications = async () => {
-        setPageLoading(true);
-        try {
-          const response = await api.get('/admin/notifications');
-          setNotifications(response.data);
-        } catch (error) { 
-          console.error("Erro ao buscar notificações", error);
-          // Tratar erro, talvez redirecionar ou mostrar mensagem
-        } finally {
-          setPageLoading(false);
-        }
-      };
-      fetchNotifications();
-    } else if (!isAuthLoading && !user) {
-      // Se não está carregando a autenticação e não tem usuário, redireciona para login
-      navigate('/login');
-    } else if (!isAuthLoading && user && !user.isAdmin) {
-      // Se não é admin, redireciona para o dashboard normal
-      navigate('/dashboard');
-    }
-  }, [isAuthLoading, user, navigate]);
-
-  const handleMarkAsRead = async (id: number) => {
-    try {
-      await api.patch(`/admin/notifications/${id}/read`);
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch (error) { console.error("Erro ao marcar como lida", error); }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  if (isAuthLoading || pageLoading) {
-    return <section className="page-section"><div className="section-content"><p>Carregando...</p></div></section>;
-  }
+  const { user } = useAuth();
 
   return (
-    <section className="page-section">
-      <div className="section-content">
-        <h1>Painel Administrativo</h1>
-        {user && <h2>Bem-vindo(a), {user.nome.split(' ')[0]}!</h2>}
-        <div className="page-actions">
-          <Link to="/admin/gerenciar-usuarios" className="btn btn-secondary">Gerenciar Usuários</Link>
-          <Link to="/admin/gerenciar-instituicoes" className="btn btn-secondary">Gerenciar Instituições</Link>
-          <Link to="/admin/visualizar-avaliacoes" className="btn btn-secondary">Visualizar Avaliações</Link>
-          <button onClick={handleLogout} className="btn btn-danger">Sair</button>
-        </div>
+    // 5. Usar <Container> para centralizar e limitar a largura
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Painel Administrativo
+      </Typography>
+      <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+        Bem-vindo, {user?.nome}!
+      </Typography>
 
-        {notifications.length > 0 && (
-          <div className="card">
-            <h2>Pedidos de Reativação Pendentes</h2>
-            <table className="management-table">
-              <thead><tr><th>Usuário</th><th>RA</th><th>Data do Pedido</th><th>Ação</th></tr></thead>
-              <tbody>
-                {notifications.map(n => (
-                  <tr key={n.id}>
-                    <td>{n.nome}</td>
-                    <td>{n.ra}</td>
-                    <td>{new Date(n.criado_em).toLocaleString()}</td>
-                    <td className="action-buttons">
-                      <Link to="/admin/gerenciar-usuarios" className="btn btn-secondary">Ver Usuário</Link>
-                      <button onClick={() => handleMarkAsRead(n.id)} className="btn btn-primary">Marcar como Lido</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {notifications.length === 0 && (
-          <div className="card" style={{textAlign: 'center'}}>
-            <p>Nenhum pedido de reativação pendente.</p>
-          </div>
-        )}
-      </div>
-    </section>
+      {/* 6. Layout responsivo de cards usando CSS grid */}
+      <Box sx={{ display: 'grid', gap: 24, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' } }}>
+        <DashboardCard
+          title="Gerenciar Usuários"
+          description="Adicionar, editar ou remover usuários e permissões."
+          link="/admin/gerenciar-usuarios"
+          icon={<PeopleIcon />}
+        />
+        <DashboardCard
+          title="Gerenciar Avaliações"
+          description="Visualizar, editar ou remover avaliações pendentes e concluídas."
+          link="/admin/visualizar-avaliacoes"
+          icon={<AssessmentIcon />}
+        />
+        <DashboardCard
+          title="Gerenciar Entidades"
+          description="Adicionar ou editar instituições, cursos e disciplinas."
+          link="/admin/gerenciar-entidades"
+          icon={<SchoolIcon />}
+        />
+        <DashboardCard
+          title="Relatórios"
+          description="Gerar e visualizar relatórios de dados das avaliações."
+          link="/admin/relatorios"
+          icon={<BarChartIcon />}
+        />
+        {/* Adicione mais cards conforme necessário */}
+      </Box>
+    </Container>
   );
 };
 

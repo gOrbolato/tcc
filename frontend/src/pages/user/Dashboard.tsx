@@ -1,89 +1,146 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import api from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
-import '../../assets/styles/UserArea.css';
 
-interface Evaluation { id: number; media_final: string; criado_em: string; instituicao_nome: string; curso_nome: string; }
+// 1. Importar componentes de Layout e Cards
+import {
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
+  CircularProgress,
+  Box,
+  Divider,
+} from '@mui/material';
+
+// 2. (Opcional) Definir tipos para os dados
+interface Avaliacao {
+  id: number;
+  disciplina: string;
+  professor: string;
+  status: 'PENDENTE' | 'CONCLUIDA';
+}
 
 const Dashboard: React.FC = () => {
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [isCooldownActive, setIsCooldownActive] = useState(false);
-  const [cooldownDays, setCooldownDays] = useState(0);
+  const [availableEvaluations, setAvailableEvaluations] = useState<Avaliacao[]>([]);
+  const [completedEvaluations, setCompletedEvaluations] = useState<Avaliacao[]>([]);
+  const [loading, setLoading] = useState(true);
   const { showNotification } = useNotification();
-  const { user, logout, isLoading: isAuthLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (isAuthLoading) return; // Espera a autenticação carregar
+    const fetchEvaluations = async () => {
+      setLoading(true);
+      try {
+        // Usar Promise.all para buscar ambas as listas em paralelo
+        const [availableRes, completedRes] = await Promise.all([
+          api.get('/evaluations/user/available'),
+          api.get('/evaluations/user/completed'),
+        ]);
+        setAvailableEvaluations(availableRes.data);
+        setCompletedEvaluations(completedRes.data);
+      } catch (error) {
+        showNotification('Erro ao buscar avaliações', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvaluations();
+  }, [showNotification]);
 
-    if (user) {
-      const fetchEvaluations = async () => {
-        setPageLoading(true);
-        try {
-          const response = await api.get('/my-evaluations');
-          const userEvaluations = response.data || [];
-          setEvaluations(userEvaluations);
-          if (userEvaluations.length > 0) {
-            const lastEvalDate = new Date(userEvaluations[0].criado_em);
-            const cooldownEndDate = new Date(lastEvalDate);
-            cooldownEndDate.setDate(cooldownEndDate.getDate() + 60);
-            const timeLeft = cooldownEndDate.getTime() - new Date().getTime();
-            if (timeLeft > 0) {
-              setIsCooldownActive(true);
-              setCooldownDays(Math.ceil(timeLeft / (1000 * 60 * 60 * 24)));
-            } else {
-              setIsCooldownActive(false);
+  // 3. Função para renderizar um card de avaliação
+  const renderEvaluationCard = (evaluation: Avaliacao, isCompleted: boolean) => (
+    <Box key={evaluation.id} sx={{ width: '100%' }}>
+      <Card
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+        }}
+      >
+        <CardContent>
+          <Typography variant="h6" component="h3" gutterBottom>
+            {evaluation.disciplina}
+          </Typography>
+          <Typography color="text.secondary">
+            Professor: {evaluation.professor}
+          </Typography>
+        </CardContent>
+        <CardActions>
+          <Button
+            size="small"
+            component={RouterLink}
+            to={
+              isCompleted
+                ? `/avaliacao/detalhes/${evaluation.id}`
+                : `/avaliacao/${evaluation.id}`
             }
-          } else {
-            setIsCooldownActive(false);
-          }
-        } catch (error) {
-          showNotification('Erro ao carregar suas avaliações.', 'error');
-        } finally {
-          setPageLoading(false);
-        }
-      };
-      fetchEvaluations();
-    } else {
-      setPageLoading(false);
-    }
-  }, [isAuthLoading, user, showNotification]);
+          >
+            {isCompleted ? 'Ver Detalhes' : 'Iniciar Avaliação'}
+          </Button>
+        </CardActions>
+      </Card>
+    </Box>
+  );
 
-  const handleLogout = () => { logout(); navigate('/'); };
-  const handleNewEvaluationClick = () => { if (!isCooldownActive) navigate('/nova-avaliacao'); };
-
-  if (isAuthLoading || pageLoading) {
-    return <section className="page-section"><div className="section-content"><p>Carregando...</p></div></section>;
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, textAlign: 'center' }}>
+        <CircularProgress />
+      </Container>
+    );
   }
 
   return (
-    <section className="page-section">
-      <div className="section-content">
-        <h1>Minhas Avaliações</h1>
-        <div className="page-actions">
-          {user?.is_active && <button onClick={handleNewEvaluationClick} className="btn btn-primary" disabled={isCooldownActive} title={isCooldownActive ? `Próxima avaliação em ${cooldownDays} dia(s)` : 'Fazer uma nova avaliação'}>Nova Avaliação</button>}
-          <Link to="/perfil" className="btn btn-secondary">Configurações</Link>
-          <button onClick={handleLogout} className="btn btn-danger">Sair</button>
-        </div>
-        {isCooldownActive && <div className="card" style={{textAlign: 'center'}}><h2>Próxima avaliação em {cooldownDays} {cooldownDays === 1 ? 'dia' : 'dias'}</h2></div>}
-        {evaluations.length > 0 ? (
-          evaluations.map(evaluation => (
-            <div key={evaluation.id} className="card">
-              <h3>{evaluation.instituicao_nome} - {evaluation.curso_nome}</h3>
-              <div className="evaluation-card-body">
-                <p><strong>Média Final:</strong> {evaluation.media_final}</p>
-                <Link to={`/avaliacao/${evaluation.id}`} className="btn btn-secondary">Ver Detalhes</Link>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="card" style={{textAlign: 'center'}}><p>Ainda não há nenhuma avaliação.</p></div>
-        )}
-      </div>
-    </section>
+    // 4. Usar <Container> para centralizar e limitar a largura do conteúdo
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Bem-vindo(a), {user?.nome.split(' ')[0]}!
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Aqui estão suas avaliações pendentes e concluídas.
+      </Typography>
+
+      {/* Seção de Avaliações Disponíveis */}
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Avaliações Disponíveis
+        </Typography>
+        <Divider sx={{ mb: 3 }} />
+        {/* 5. Layout responsivo de cards usando CSS grid */}
+        <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' } }}>
+          {availableEvaluations.length > 0 ? (
+            availableEvaluations.map((evalu) => renderEvaluationCard(evalu, false))
+          ) : (
+            <Box>
+              <Typography>Você não possui avaliações pendentes.</Typography>
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      {/* Seção de Avaliações Concluídas */}
+      <Box>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Avaliações Concluídas
+        </Typography>
+        <Divider sx={{ mb: 3 }} />
+        <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' } }}>
+          {completedEvaluations.length > 0 ? (
+            completedEvaluations.map((evalu) => renderEvaluationCard(evalu, true))
+          ) : (
+            <Box>
+              <Typography>Você ainda não concluiu nenhuma avaliação.</Typography>
+            </Box>
+          )}
+        </Box>
+      </Box>
+    </Container>
   );
 };
 
