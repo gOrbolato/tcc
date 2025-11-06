@@ -10,6 +10,7 @@ interface ReportFilters {
 interface PythonAnalysisResult {
   averages_by_question: { [key: string]: number };
   suggestions: Array<{ type: string; category: string; score: number; sentiment: number; suggestion: string }>;
+  analysis_by_question: { [key: string]: any };
 }
 
 interface NotificationData extends RowDataPacket {
@@ -48,12 +49,27 @@ export const getAdminReportData = async (filters: ReportFilters) => {
       total_evaluations: 0,
       averages_by_question: {},
       suggestions: [],
+      score_distribution: {},
+      raw_data: [],
     };
   }
 
   const total_evaluations = evaluations.length;
   const sum_media_final = evaluations.reduce((sum, ev) => sum + (Number(ev.media_final) || 0), 0);
   const average_media_final = sum_media_final / total_evaluations;
+
+  const score_distribution = evaluations.reduce((acc, ev) => {
+    const score = Math.round(ev.media_final);
+    acc[score] = (acc[score] || 0) + 1;
+    return acc;
+  }, {} as { [key: string]: number });
+
+  const raw_data = evaluations.map(ev => ({
+    id: ev.id,
+    comentario_geral: ev.comentario_geral,
+    media_final: ev.media_final,
+    created_at: ev.created_at,
+  }));
 
   // Chamar o script Python para análise avançada
   const pythonAnalysis: PythonAnalysisResult = await new Promise((resolve, reject) => {
@@ -91,6 +107,9 @@ export const getAdminReportData = async (filters: ReportFilters) => {
     total_evaluations,
     averages_by_question: pythonAnalysis.averages_by_question,
     suggestions: pythonAnalysis.suggestions,
+    analysis_by_question: pythonAnalysis.analysis_by_question,
+    score_distribution,
+    raw_data,
   };
 };
 
@@ -158,4 +177,20 @@ export const generateReports = async () => {
     pythonProcess.stdin.write(JSON.stringify(evaluations));
     pythonProcess.stdin.end();
   });
+};
+
+interface AdminProfileData {
+  nome?: string;
+  email?: string;
+}
+
+export const updateAdminProfile = async (adminId: number, data: AdminProfileData) => {
+  if (!data.nome) {
+    throw new Error('O nome é obrigatório.');
+  }
+
+  await pool.query('UPDATE Admins SET nome = ? WHERE id = ?', [data.nome, adminId]);
+
+  const [updatedAdminRows] = await pool.query<RowDataPacket[]>('SELECT id, nome, email FROM Admins WHERE id = ?', [adminId]);
+  return { ...updatedAdminRows[0], isAdmin: true };
 };

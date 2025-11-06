@@ -3,15 +3,18 @@ import { body, validationResult } from 'express-validator';
 
 export const validateRegister = [
   body('nome').trim().notEmpty().withMessage('Nome é obrigatório.'),
-  body('cpf').isString().isLength({ min: 11, max: 14 }).withMessage('CPF inválido.'),
+  body('cpf').optional().isString().isLength({ min: 11, max: 14 }).withMessage('CPF inválido.'),
   body('ra').isString().notEmpty().withMessage('RA é obrigatório.'),
-  body('idade').isInt({ min: 10, max: 100 }).withMessage('Idade inválida.'),
   body('email').isEmail().withMessage('E-mail inválido.'),
   body('senha').isLength({ min: 8 }).withMessage('A senha deve ter no mínimo 8 caracteres.'),
-  body('instituicao_id').isInt({ min: 1 }).withMessage('Instituição é obrigatória.'),
-  body('curso_id').isInt({ min: 1 }).withMessage('Curso é obrigatório.'),
-  body('periodo').notEmpty().withMessage('Período é obrigatório.'),
-  body('semestre').notEmpty().withMessage('Semestre é obrigatório.'),
+  // Instituição/curso podem ser enviados como texto (institutionText/courseText) ou por id
+  body('instituicao_id').optional().isInt({ min: 1 }).withMessage('Instituição inválida.'),
+  body('curso_id').optional().isInt({ min: 1 }).withMessage('Curso inválido.'),
+  body('institutionText').optional().isString().trim(),
+  body('courseText').optional().isString().trim(),
+  body('previsaoTermino').optional().matches(/^\d{4}-\d{2}$/).withMessage('Previsão de término deve estar no formato YYYY-MM.'),
+  body('periodo').optional().notEmpty().withMessage('Período é obrigatório.'),
+  body('semestre').optional().notEmpty().withMessage('Semestre é obrigatório.'),
 ];
 
 export const validateEvaluation = [
@@ -24,15 +27,21 @@ export const validateEvaluation = [
 ];
 
 export const validateUpdateProfile = [
-  body('curso').optional().isString().notEmpty().withMessage('Curso não pode ser vazio.'),
-  body('instituicao').optional().isString().notEmpty().withMessage('Instituição não pode ser vazia.'),
   body('periodo').optional().isString().notEmpty().withMessage('Período não pode ser vazio.'),
-  body('novaSenha').optional().isLength({ min: 8 }).withMessage('A nova senha deve ter no mínimo 8 caracteres.'),
+  body('previsaoTermino').optional().matches(/^\d{4}-\d{2}$/).withMessage('Previsão de término deve estar no formato YYYY-MM.'),
 ];
 
 export const validateConsent = [
   body('consentimento_cookies').isBoolean().withMessage('Consentimento de cookies deve ser um booleano.'),
   body('consentimento_localizacao').isBoolean().withMessage('Consentimento de localização deve ser um booleano.'),
+];
+
+export const validateConsentSubmission = [
+  body('type').isString().notEmpty().withMessage('Tipo de consentimento é obrigatório.'),
+  body('agreed').isBoolean().withMessage('Agreed deve ser booleano.'),
+  body('version').optional().isString(),
+  body('source').optional().isString(),
+  body('metadata').optional(),
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {

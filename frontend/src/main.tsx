@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import { SelectionProvider } from './contexts/SelectionContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -33,9 +34,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       >
         <BrowserRouter>
           {/* O seu NotificationProvider antigo não é mais necessário */}
-          <AuthProvider>
-            <App />
-          </AuthProvider>
+          <SelectionProvider>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </SelectionProvider>
         </BrowserRouter>
       </SnackbarProvider>
     </ThemeProvider>

@@ -68,17 +68,7 @@ const Header: React.FC = () => {
       </ListItemIcon>
       Perfil
     </MenuItem>,
-    <MenuItem
-      key="dashboard"
-      component={RouterLink}
-      to={user?.isAdmin ? '/admin/dashboard' : '/dashboard'}
-      onClick={handleProfileMenuClose}
-    >
-      <ListItemIcon>
-        {user?.isAdmin ? <AdminPanelSettingsIcon fontSize="small" /> : <DashboardIcon fontSize="small" />}
-      </ListItemIcon>
-      {user?.isAdmin ? 'Painel Admin' : 'Dashboard'}
-    </MenuItem>,
+    
     <Divider key="divider" />,
     <MenuItem key="logout" onClick={handleLogout}>
       <ListItemIcon>
@@ -140,12 +130,19 @@ const Header: React.FC = () => {
         {/* Título/Logo à esquerda */}
         <Typography
           variant="h6"
-          component={RouterLink}
-          to="/"
           sx={{
             flexGrow: 1, // Empurra todo o resto para a direita
             color: 'inherit',
             textDecoration: 'none',
+            cursor: 'pointer',
+          }}
+          onClick={() => {
+            if (isAuthenticated && user) {
+              if (user.isAdmin) navigate('/admin/dashboard');
+              else navigate('/dashboard');
+            } else {
+              navigate('/');
+            }
           }}
         >
           Avaliação Educacional

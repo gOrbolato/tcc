@@ -24,3 +24,10 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     res.status(401).json({ message: 'Token inválido.' });
   }
 };
+
+export const adminOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ message: 'Acesso negado. Rota exclusiva para administradores.' });
+  }
+  next();
+};

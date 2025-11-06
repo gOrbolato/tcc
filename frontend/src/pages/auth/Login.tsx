@@ -1,4 +1,3 @@
-// src/pages/auth/Login.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -38,8 +37,14 @@ const Login: React.FC = () => {
       } else {
         navigate('/dashboard');
       }
-    } catch (error) {
-      showNotification('E-mail ou senha inválidos.', 'error');
+    } catch (error: any) {
+      // MODIFICADO: Checa o erro específico de conta trancada
+      if (error?.response?.status === 403 && error?.response?.data?.message === 'ACCOUNT_LOCKED') {
+        showNotification('Sua conta está trancada. Por favor, reative seu acesso.', 'warning');
+        navigate('/validar-codigo');
+      } else {
+        showNotification('E-mail ou senha inválidos.', 'error');
+      }
     }
   };
 

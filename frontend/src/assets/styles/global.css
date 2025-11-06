@@ -28,7 +28,7 @@ body {
 /* Header e Footer */
 .header, .footer {
   background-color: var(--card-bg-color);
-  padding: 1rem 2rem;
+  padding: 0.5rem 1rem; /* reduced padding to make footer/header more compact */
   box-shadow: var(--shadow);
 }
 
@@ -68,4 +68,22 @@ body {
 .footer {
   text-align: center;
   margin-top: auto;
+  font-size: 0.85rem; /* slightly smaller global footer font */
+}
+
+/* Specific compact styles for MUI Footer Box layout */
+.footer .MuiContainer-root {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.footer .MuiTypography-h6 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.footer button {
+  padding: 0;
+  min-width: 0;
+  line-height: 1;
 }

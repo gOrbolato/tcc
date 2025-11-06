@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 // 1. Importar componentes de Layout e Cards do MUI
@@ -12,6 +12,7 @@ import {
   CardActions,
   Box,
   Icon,
+  Chip,
 } from '@mui/material';
 
 // 2. Importar Ícones para os cards
@@ -56,7 +57,36 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, description, link,
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [userChanges, setUserChanges] = useState(0);
+  const [entityChanges, setEntityChanges] = useState(0);
 
+  useEffect(() => {
+    // fetch admin notifications and classify them
+    let mounted = true;
+    (async () => {
+      try {
+        const api = (await import('../../services/api')).default;
+        const res = await api.get('/admin/notifications');
+        if (!mounted) return;
+        const notes: any[] = res.data || [];
+        const userKeywords = ['usuário', 'usuario', 'user', 'ativar', 'desativar', 'reativa'];
+        const entityKeywords = ['institui', 'curso', 'instituição', 'curso', 'entidade'];
+        let u = 0; let e = 0;
+        for (const n of notes) {
+          const text = (n.mensagem || '' + n.nome || '').toString().toLowerCase();
+          if (userKeywords.some(k => text.includes(k))) u++;
+          if (entityKeywords.some(k => text.includes(k))) e++;
+        }
+        setUserChanges(u);
+        setEntityChanges(e);
+      } catch (err) {
+        // ignore errors silently
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const navigate = useNavigate();
   return (
     // 5. Usar <Container> para centralizar e limitar a largura
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -69,24 +99,42 @@ const AdminDashboard: React.FC = () => {
 
       {/* 6. Layout responsivo de cards usando CSS grid */}
       <Box sx={{ display: 'grid', gap: 24, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' } }}>
-        <DashboardCard
-          title="Gerenciar Usuários"
-          description="Adicionar, editar ou remover usuários e permissões."
-          link="/admin/gerenciar-usuarios"
-          icon={<PeopleIcon />}
-        />
-        <DashboardCard
-          title="Gerenciar Avaliações"
-          description="Visualizar, editar ou remover avaliações pendentes e concluídas."
-          link="/admin/visualizar-avaliacoes"
-          icon={<AssessmentIcon />}
-        />
-        <DashboardCard
-          title="Gerenciar Entidades"
-          description="Adicionar ou editar instituições, cursos e disciplinas."
-          link="/admin/gerenciar-entidades"
-          icon={<SchoolIcon />}
-        />
+        <Box sx={{ position: 'relative' }}>
+          <DashboardCard
+            title="Gerenciar Usuários"
+            description="Editar ou remover usuários e permissões."
+            link="/admin/gerenciar-usuarios"
+            icon={<PeopleIcon />}
+          />
+          {userChanges > 0 && (
+            <Chip
+              label={`${userChanges} alterações`}
+              color="warning"
+              size="small"
+              clickable
+              onClick={() => navigate('/admin/gerenciar-usuarios?from=dashboard_notifications')}
+              sx={{ position: 'absolute', top: 8, right: 8, cursor: 'pointer' }}
+            />
+          )}
+        </Box>
+        <Box sx={{ position: 'relative' }}>
+          <DashboardCard
+            title="Gerenciar Entidades"
+            description="Editar instituições e/ou cursos."
+            link="/admin/gerenciar-entidades"
+            icon={<SchoolIcon />}
+          />
+          {entityChanges > 0 && (
+            <Chip
+              label={`${entityChanges} alterações`}
+              color="warning"
+              size="small"
+              clickable
+              onClick={() => navigate('/admin/gerenciar-entidades?from=dashboard_notifications')}
+              sx={{ position: 'absolute', top: 8, right: 8, cursor: 'pointer' }}
+            />
+          )}
+        </Box>
         <DashboardCard
           title="Relatórios"
           description="Gerar e visualizar relatórios de dados das avaliações."

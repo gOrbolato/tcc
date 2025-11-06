@@ -1,84 +1,97 @@
 import pool from '../config/database';
-import { OkPacket, RowDataPacket } from 'mysql2';
+import { RowDataPacket } from 'mysql2';
 
-// --- LÓGICA DE "OBTER OU CRIAR" ---
-export const findOrCreateInstitution = async (nome: string) => {
-  if (!nome || nome.trim() === '') throw new Error('O nome da instituição não pode ser vazio.');
-  const [existing] = await pool.query<RowDataPacket[]>('SELECT * FROM Instituicoes WHERE nome = ?', [nome.trim()]);
-  if (existing.length > 0) return existing[0];
-  const [result] = await pool.query<OkPacket>('INSERT INTO Instituicoes (nome) VALUES (?)', [nome.trim()]);
-  return { id: result.insertId, nome: nome.trim() };
+export const getAllInstitutions = async (q?: string) => {
+  let query = 'SELECT id, nome, latitude, longitude FROM Instituicoes WHERE is_active = TRUE';
+  const params = [];
+  if (q) {
+    query += ' AND nome LIKE ?';
+    params.push(`%${q}%`);
+  }
+  query += ' ORDER BY nome ASC';
+  const [rows] = await pool.query<RowDataPacket[]>(query, params);
+  return rows;
 };
 
-export const findOrCreateCourse = async (nome: string, instituicao_id: number) => {
-  if (!nome || nome.trim() === '') throw new Error('O nome do curso não pode ser vazio.');
-  const [existing] = await pool.query<RowDataPacket[]>('SELECT * FROM Cursos WHERE nome = ? AND instituicao_id = ?', [nome.trim(), instituicao_id]);
-  if (existing.length > 0) return existing[0];
-  const [result] = await pool.query<OkPacket>('INSERT INTO Cursos (nome, instituicao_id) VALUES (?, ?)', [nome.trim(), instituicao_id]);
-  return { id: result.insertId, nome: nome.trim(), instituicao_id };
-};
+export const getCoursesByInstitution = async (institutionId?: number, q?: string) => {
+  let query = 'SELECT id, nome FROM Cursos WHERE is_active = TRUE';
+  const params = [];
+  let whereClauses = [];
 
-// --- FUNÇÕES DE LEITURA ---
-export const getInstitutions = async (nameFilter?: string) => {
-  let query = `
-    SELECT i.id, i.nome, AVG(a.media_final) AS nota_geral
-    FROM Instituicoes i
-    LEFT JOIN Avaliacoes a ON i.id = a.instituicao_id
-  `;
-  const params: (string | number)[] = [];
-
-  if (nameFilter) {
-    query += ` WHERE i.nome LIKE ?`;
-    params.push(`%${nameFilter}%`);
+  if (institutionId) {
+    whereClauses.push('instituicao_id = ?');
+    params.push(institutionId);
+  }
+  if (q) {
+    whereClauses.push('nome LIKE ?');
+    params.push(`%${q}%`);
   }
 
-  query += `
-    GROUP BY i.id, i.nome
-    ORDER BY i.nome ASC;
-  `;
-  const [institutions] = await pool.query<RowDataPacket[]>(query, params);
-  return institutions;
+  if (whereClauses.length > 0) {
+    query += ` AND ${whereClauses.join(' AND ')}`;
+  }
+
+  query += ' ORDER BY nome ASC';
+  const [rows] = await pool.query<RowDataPacket[]>(query, params);
+  return rows;
 };
 
-export const getCourses = async () => {
-  const [courses] = await pool.query<RowDataPacket[]>('SELECT c.id, c.nome, c.instituicao_id, i.nome as instituicao_nome FROM Cursos c JOIN Instituicoes i ON c.instituicao_id = i.id ORDER BY c.nome ASC');
-  return courses;
+export const updateInstitution = async (institutionId: number, nome: string) => {
+  await pool.query('UPDATE Instituicoes SET nome = ? WHERE id = ?', [nome, institutionId]);
+  const [rows] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Instituicoes WHERE id = ?', [institutionId]);
+  return rows[0];
 };
 
-export const getCoursesByInstitutionId = async (id: number) => {
-  const query = `
-    SELECT c.id, c.nome, AVG(a.media_final) AS nota_geral
-    FROM Cursos c
-    LEFT JOIN Avaliacoes a ON c.id = a.curso_id
-    WHERE c.instituicao_id = ?
-    GROUP BY c.id, c.nome
-    ORDER BY c.nome ASC;
-  `;
-  const [courses] = await pool.query<RowDataPacket[]>(query, [id]);
-  return courses;
+export const updateCourse = async (courseId: number, nome: string) => {
+  await pool.query('UPDATE Cursos SET nome = ? WHERE id = ?', [nome, courseId]);
+  const [rows] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Cursos WHERE id = ?', [courseId]);
+  return rows[0];
 };
 
-// --- FUNÇÕES DE MODIFICAÇÃO ---
-export const updateInstitution = async (id: number, nome: string) => {
-  const [result] = await pool.query<OkPacket>('UPDATE Instituicoes SET nome = ? WHERE id = ?', [nome, id]);
-  if (result.affectedRows === 0) throw new Error('Instituição não encontrada.');
-  return { id, nome };
+export const deleteInstitution = async (institutionId: number) => {
+  await pool.query('UPDATE Instituicoes SET is_active = FALSE WHERE id = ?', [institutionId]);
 };
 
-export const updateCourse = async (id: number, nome: string) => {
-  const [result] = await pool.query<OkPacket>('UPDATE Cursos SET nome = ? WHERE id = ?', [nome, id]);
-  if (result.affectedRows === 0) throw new Error('Curso não encontrado.');
-  return { id, nome };
+export const deleteCourse = async (courseId: number) => {
+  await pool.query('UPDATE Cursos SET is_active = FALSE WHERE id = ?', [courseId]);
 };
 
-export const deleteInstitution = async (id: number) => {
-  const [courses] = await pool.query<RowDataPacket[]>('SELECT id FROM Cursos WHERE instituicao_id = ?', [id]);
-  if (courses.length > 0) throw new Error('Não é possível excluir uma instituição que ainda possui cursos vinculados.');
-  const [result] = await pool.query<OkPacket>('DELETE FROM Instituicoes WHERE id = ?', [id]);
-  if (result.affectedRows === 0) throw new Error('Instituição não encontrada.');
+// Função para calcular a distância entre dois pontos usando a fórmula de Haversine
+const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Raio da Terra em quilômetros
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 };
 
-export const deleteCourse = async (id: number) => {
-  const [result] = await pool.query<OkPacket>('DELETE FROM Cursos WHERE id = ?', [id]);
-  if (result.affectedRows === 0) throw new Error('Curso não encontrado.');
+export const getInstitutionsNearby = async (latitude: number, longitude: number, radius: number) => {
+  const [institutions] = await pool.query<RowDataPacket[]>(
+    `SELECT 
+      i.id, i.nome, i.latitude, i.longitude, 
+      AVG(a.media_final) AS average_media_final
+    FROM Instituicoes i
+    LEFT JOIN Avaliacoes a ON i.id = a.instituicao_id
+    WHERE i.is_active = TRUE AND i.latitude IS NOT NULL AND i.longitude IS NOT NULL
+    GROUP BY i.id, i.nome, i.latitude, i.longitude
+    HAVING average_media_final IS NOT NULL
+    ORDER BY average_media_final DESC`
+  );
+
+  const nearbyInstitutions = institutions.filter(inst => {
+    if (inst.latitude && inst.longitude) {
+      const distance = haversineDistance(latitude, longitude, inst.latitude, inst.longitude);
+      return distance <= radius;
+    }
+    return false;
+  });
+
+  // Ordenar novamente por média final decrescente (já está na query, mas para garantir após o filtro)
+  nearbyInstitutions.sort((a, b) => (b.average_media_final || 0) - (a.average_media_final || 0));
+
+  return nearbyInstitutions;
 };

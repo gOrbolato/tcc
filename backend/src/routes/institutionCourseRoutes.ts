@@ -9,7 +9,8 @@ import {
     getCourses, 
     updateCourse, 
     deleteCourse,
-    getCoursesByInstitution // Adicionando a função que faltava
+    getCoursesByInstitution, // Adicionando a função que faltava
+    getInstitutionsNearby
 } from '../controllers/institutionCourseController';
 import { authenticate } from '../middlewares/authMiddleware';
 import { isAdmin } from '../middlewares/isAdmin';
@@ -20,6 +21,7 @@ const router = Router();
 
 // Rota pública para listar todas as instituições (usado no formulário de registro)
 router.get('/institutions', getInstitutions);
+router.get('/institutions/nearby', getInstitutionsNearby);
 
 // Rota pública para listar cursos de uma instituição específica (usado no formulário de registro)
 router.get('/institutions/:id/courses', getCoursesByInstitution);

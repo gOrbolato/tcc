@@ -5,19 +5,7 @@ import AuthLayout from '../../components/AuthLayout';
 import api from '../../services/api';
 
 // 1. Importar todos os componentes de formulário necessários
-import {
-  TextField,
-  Button,
-  Box,
-  Typography,
-  Link,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import { TextField, Button, Box, Typography, Link, CircularProgress, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 // Definir tipos para os dados (bom para clareza)
 interface Instituicao {
@@ -37,49 +25,20 @@ const Registro: React.FC = () => {
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [ra, setRa] = useState('');
-  const [instituicaoId, setInstituicaoId] = useState('');
-  const [cursoId, setCursoId] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [instituicaoTexto, setInstituicaoTexto] = useState('');
+  const [cursoTexto, setCursoTexto] = useState('');
+  const [semestre, setSemestre] = useState('');
+  const [periodo, setPeriodo] = useState('');
+  const [previsaoTermino, setPrevisaoTermino] = useState('');
 
   // States de loading e dados dos dropdowns
-  const [instituicoes, setInstituicoes] = useState<Instituicao[]>([]);
-  const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingCursos, setLoadingCursos] = useState(false);
 
   const navigate = useNavigate();
   const { showNotification } = useNotification();
 
-  // Buscar instituições no carregamento
-  useEffect(() => {
-    const fetchInstituicoes = async () => {
-      try {
-        const response = await api.get('/institution-courses/institutions');
-        setInstituicoes(response.data);
-      } catch (error) {
-        showNotification('Erro ao carregar instituições', 'error');
-      }
-    };
-    fetchInstituicoes();
-  }, [showNotification]);
-
-  // Buscar cursos quando a instituição mudar
-  useEffect(() => {
-    if (instituicaoId) {
-      const fetchCursos = async () => {
-        setLoadingCursos(true);
-        try {
-          const response = await api.get(`/institution-courses/courses/${instituicaoId}`);
-          setCursos(response.data);
-          setCursoId(''); // Resetar seleção de curso
-        } catch (error) {
-          showNotification('Erro ao carregar cursos', 'error');
-        } finally {
-          setLoadingCursos(false);
-        }
-      };
-      fetchCursos();
-    }
-  }, [instituicaoId, showNotification]);
+  // Note: institution/course selects removed; user types institution/curso in the text fields below
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,33 +53,32 @@ const Registro: React.FC = () => {
         email,
         senha,
         ra,
-        institutionId: Number(instituicaoId),
-        courseId: Number(cursoId),
+        cpf: cpf || undefined,
+  institutionText: instituicaoTexto || undefined,
+  courseText: cursoTexto || undefined,
+        semestre: semestre ? Number(semestre) : undefined,
+        periodo: periodo || undefined,
+        previsaoTermino: previsaoTermino || undefined,
       });
       showNotification('Registro realizado com sucesso!', 'success');
       navigate('/login');
-    } catch (error) {
-      showNotification('Erro ao realizar registro. Verifique seus dados.', 'error');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao realizar registro. Verifique seus dados.';
+      showNotification(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. Handlers para os Selects do MUI
-  const handleInstituicaoChange = (e: SelectChangeEvent<string>) => {
-    setInstituicaoId(e.target.value);
-  };
-
-  const handleCursoChange = (e: SelectChangeEvent<string>) => {
-    setCursoId(e.target.value);
-  };
+  // (select handlers removed)
 
   return (
     <AuthLayout title="Criar Conta">
       <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
         {/* 3. Layout responsivo do formulário usando Box (substitui Grid) */}
         <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
-          <Box>
+          {/* Nome (full width) */}
+          <Box sx={{ gridColumn: '1 / -1' }}>
             <TextField
               margin="normal"
               required
@@ -132,6 +90,21 @@ const Registro: React.FC = () => {
               autoFocus
               value={nome}
               onChange={(e) => setNome(e.target.value)}
+              disabled={loading}
+            />
+          </Box>
+
+          {/* CPF & RA on same row */}
+          <Box>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="cpf"
+              label="CPF"
+              name="cpf"
+              autoComplete="off"
+              value={cpf}
+              onChange={(e) => setCpf(e.target.value)}
               disabled={loading}
             />
           </Box>
@@ -149,6 +122,81 @@ const Registro: React.FC = () => {
               disabled={loading}
             />
           </Box>
+
+          {/* Instituição (full width) */}
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="instituicao-texto"
+              label="Instituição"
+              name="instituicao-texto"
+              placeholder="Digite sua instituição"
+              value={instituicaoTexto}
+              onChange={(e) => setInstituicaoTexto(e.target.value)}
+              disabled={loading}
+            />
+          </Box>
+
+          {/* Curso (full width) */}
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="curso-texto"
+              label="Curso"
+              name="curso-texto"
+              placeholder="Digite seu curso"
+              value={cursoTexto}
+              onChange={(e) => setCursoTexto(e.target.value)}
+              disabled={loading}
+            />
+          </Box>
+
+          {/* Periodo & Semestre on same row */}
+          <Box>
+            <FormControl fullWidth margin="normal" disabled={loading}>
+              <InputLabel id="periodo-label">Período</InputLabel>
+              <Select labelId="periodo-label" id="periodo" value={periodo} label="Período" onChange={(e) => setPeriodo(e.target.value)}>
+                <MenuItem value="matutino">Matutino</MenuItem>
+                <MenuItem value="noturno">Noturno</MenuItem>
+                <MenuItem value="integral">Integral</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          <Box>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="semestre"
+              label="Semestre"
+              name="semestre"
+              type="number"
+              inputProps={{ min: 1 }}
+              value={semestre}
+              onChange={(e) => setSemestre(e.target.value)}
+              disabled={loading}
+            />
+          </Box>
+
+          {/* Previsão Término (full width) */}
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="previsao-termino"
+              label="Previsão de término (mês/ano)"
+              name="previsao-termino"
+              type="month"
+              value={previsaoTermino}
+              onChange={(e) => setPrevisaoTermino(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ style: { paddingTop: 14 } }}
+              disabled={loading}
+            />
+          </Box>
+
+          {/* Email (full width) */}
           <Box sx={{ gridColumn: '1 / -1' }}>
             <TextField
               margin="normal"
@@ -163,6 +211,8 @@ const Registro: React.FC = () => {
               disabled={loading}
             />
           </Box>
+
+          {/* Senha & Confirmar Senha on same row */}
           <Box>
             <TextField
               margin="normal"
@@ -192,51 +242,6 @@ const Registro: React.FC = () => {
               onChange={(e) => setConfirmarSenha(e.target.value)}
               disabled={loading}
             />
-          </Box>
-
-          {/* 4. Substituir <select> por <FormControl> + <Select> */}
-          <Box sx={{ gridColumn: '1 / -1' }}>
-            <FormControl fullWidth margin="normal" required disabled={loading}>
-              <InputLabel id="instituicao-label">Instituição</InputLabel>
-              <Select
-                labelId="instituicao-label"
-                id="instituicao"
-                value={instituicaoId}
-                label="Instituição"
-                onChange={handleInstituicaoChange}
-              >
-                {instituicoes.map((inst) => (
-                  <MenuItem key={inst.id} value={inst.id}>
-                    {inst.nome}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-          <Box sx={{ gridColumn: '1 / -1' }}>
-            <FormControl fullWidth margin="normal" required disabled={loading || loadingCursos || !instituicaoId}>
-              <InputLabel id="curso-label">Curso</InputLabel>
-              <Select
-                labelId="curso-label"
-                id="curso"
-                value={cursoId}
-                label="Curso"
-                onChange={handleCursoChange}
-              >
-                {/* 5. Mostrar loading dentro do Select */}
-                {loadingCursos ? (
-                  <MenuItem disabled>
-                    <CircularProgress size={20} sx={{ margin: 'auto' }} />
-                  </MenuItem>
-                ) : (
-                  cursos.map((curso) => (
-                    <MenuItem key={curso.id} value={curso.id}>
-                      {curso.nome}
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
           </Box>
         </Box>
 

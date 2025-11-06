@@ -34,7 +34,7 @@ const App: React.FC = () => {
         </AnimatePresence>
       </Box>
       
-      <Footer />
+  {location.pathname === '/' && <Footer />}
       <CookieConsent />
     </Box>
   );

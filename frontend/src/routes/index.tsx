@@ -11,6 +11,7 @@ import Login from '../pages/auth/Login';
 import Registro from '../pages/auth/Registro';
 import RecuperarSenha from '../pages/auth/RecuperarSenha';
 import ResetarSenha from '../pages/auth/ResetarSenha';
+import ValidarCodigoDesbloqueio from '../pages/auth/ValidarCodigoDesbloqueio'; // <-- ADICIONADO
 
 import Dashboard from '../pages/user/Dashboard';
 import Avaliacao from '../pages/user/Avaliacao';
@@ -18,9 +19,11 @@ import Perfil from '../pages/user/Perfil';
 import AvaliacaoDetalhes from '../pages/user/AvaliacaoDetalhes';
 
 import AdminDashboard from '../pages/admin/AdminDashboard';
+// import AdminPerfil from '../pages/admin/AdminPerfil'; // REMOVIDO
 import AdminUserManagement from '../pages/admin/AdminUserManagement';
 import InstitutionCourseManagement from '../pages/InstitutionCourseManagement';
-import VisualizarAvaliacoes from '../pages/admin/VisualizarAvaliacoes';
+import Reports from '../pages/admin/reports';
+// AdminActions and VisualizarAvaliacoes pages removed per request
 // --- Fim das Importações ---
 
 // 1. Wrapper de animação para as páginas
@@ -47,6 +50,7 @@ const AppRoutes = ({ location }: { location: Location }) => {
       <Route path="/registro" element={<Registro />} />
       <Route path="/recuperar-senha" element={<RecuperarSenha />} />
       <Route path="/resetar-senha/:token" element={<ResetarSenha />} />
+      <Route path="/validar-codigo" element={<ValidarCodigoDesbloqueio />} /> {/* <-- ADICIONADO */}
 
       {/* Páginas com animação */}
       <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
@@ -78,18 +82,25 @@ const AppRoutes = ({ location }: { location: Location }) => {
         path="/admin/dashboard"
         element={<ProtectedRoute adminOnly={true}><PageWrapper><AdminDashboard /></PageWrapper></ProtectedRoute>}
       />
+      {/*
+      <Route
+        path="/admin/perfil"
+        element={<ProtectedRoute adminOnly={true}><PageWrapper><AdminPerfil /></PageWrapper></ProtectedRoute>}
+      />
+      */}
       <Route
         path="/admin/gerenciar-usuarios"
         element={<ProtectedRoute adminOnly={true}><PageWrapper><AdminUserManagement /></PageWrapper></ProtectedRoute>}
       />
       <Route
-        path="/admin/gerenciar-instituicoes" // O nome da sua rota era 'gerenciar-instituicoes'
+        path="/admin/gerenciar-entidades" // padronizado: gerenciar-entidades
         element={<ProtectedRoute adminOnly={true}><PageWrapper><InstitutionCourseManagement /></PageWrapper></ProtectedRoute>}
       />
       <Route
-        path="/admin/visualizar-avaliacoes"
-        element={<ProtectedRoute adminOnly={true}><PageWrapper><VisualizarAvaliacoes /></PageWrapper></ProtectedRoute>}
+        path="/admin/relatorios"
+        element={<ProtectedRoute adminOnly={true}><PageWrapper><Reports /></PageWrapper></ProtectedRoute>}
       />
+      {/* /admin/logs and /admin/visualizar-avaliacoes removed */}
 
       {/* Rota de fallback */}
       <Route path="*" element={<Navigate to="/" />} />

@@ -15,16 +15,34 @@ export const login = async (req: Request, res: Response) => {
     const { token, user } = await authService.login(req.body.email, req.body.senha) as { token: string; user: any };
     res.status(200).json({ token, user });
   } catch (error: any) {
-    if (error.message.includes('inválidos') || error.message.includes('trancada')) {
+    // MODIFICADO: Retorna 403 para conta trancada, para que o frontend possa redirecionar
+    if (error.message === 'ACCOUNT_LOCKED') {
+      return res.status(403).json({ message: error.message });
+    }
+    if (error.message.includes('inválidos')) {
       return res.status(401).json({ message: error.message });
     }
     res.status(500).json({ message: 'Ocorreu um erro inesperado no servidor.' });
   }
 };
 
+export const validateUnlockCode = async (req: Request, res: Response) => {
+  try {
+    const { cpf, code } = req.body;
+    if (!cpf || !code) {
+      return res.status(400).json({ message: 'CPF e código são obrigatórios.' });
+    }
+    const result = await authService.validateUnlockCode(cpf, code);
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(400).json({ message: error.message || 'Erro ao validar o código de desbloqueio.' });
+  }
+};
+
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     await authService.forgotPassword(req.body.email);
+    // For security do not return the code in the API response.
     res.status(200).json({ message: 'Se o e-mail estiver cadastrado, um código de recuperação foi enviado.' });
   } catch (error: any) {
     res.status(400).json({ message: error.message || 'Erro ao processar a solicitação de recuperação de senha.' });

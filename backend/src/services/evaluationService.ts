@@ -7,6 +7,7 @@ interface EvaluationFilters {
   latitude?: string;
   longitude?: string;
   radius?: string;
+  anonymizedId?: string;
 }
 
 // Para o painel de admin
@@ -16,7 +17,8 @@ export const getFilteredEvaluations = async (filters: EvaluationFilters) => {
       a.id, a.media_final, a.criado_em, 
       i.nome AS instituicao_nome, 
       c.nome AS curso_nome,
-      u.ra AS usuario_ra
+      u.ra AS usuario_ra,
+      u.anonymized_id
       ${filters.latitude && filters.longitude ? ", ( 6371 * acos( cos( radians(?) ) * cos( radians( i.latitude ) ) * cos( radians( i.longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( i.latitude ) ) ) ) AS distance" : ""}
     FROM Avaliacoes a
     JOIN Instituicoes i ON a.instituicao_id = i.id
@@ -31,6 +33,7 @@ export const getFilteredEvaluations = async (filters: EvaluationFilters) => {
   }
   if (filters.institutionId) { query += ' AND a.instituicao_id = ?'; params.push(filters.institutionId); }
   if (filters.courseId) { query += ' AND a.curso_id = ?'; params.push(filters.courseId); }
+  if (filters.anonymizedId) { query += ' AND u.anonymized_id = ?'; params.push(filters.anonymizedId); }
   if (filters.latitude && filters.longitude && filters.radius) { query += ' HAVING distance < ?'; params.push(Number(filters.radius)); }
 
   query += ' ORDER BY a.criado_em DESC';
@@ -47,8 +50,8 @@ export const getEvaluationsByUserId = async (userId: number) => {
       i.nome AS instituicao_nome, 
       c.nome AS curso_nome
     FROM Avaliacoes a 
-    JOIN Instituicoes i ON a.instituicao_id = i.id 
-    JOIN Cursos c ON a.curso_id = c.id 
+    LEFT JOIN Instituicoes i ON a.instituicao_id = i.id 
+    LEFT JOIN Cursos c ON a.curso_id = c.id 
     WHERE a.usuario_id = ? 
     ORDER BY a.criado_em DESC`;
 

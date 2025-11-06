@@ -9,14 +9,20 @@ interface AuthRequest extends ExpressRequest {
 
 export const submitConsent = async (req: AuthRequest, res: Response) => {
   try {
-    const { consentimento_cookies, consentimento_localizacao } = req.body;
-    const ip_address = req.ip; // Obtém o IP do cliente
-    const user_agent = req.headers['user-agent']; // Obtém o User-Agent
+    // New payload: { type, agreed, version, source, metadata }
+    const { type, agreed, version, source, metadata } = req.body;
+    const ip_address = (req.headers['x-forwarded-for'] || req.socket.remoteAddress) as string | undefined;
+    const user_agent = req.headers['user-agent'] as string | undefined;
+
+    const userId = req.user?.id || null;
 
     const consent = await consentService.submitConsent(
-      req.user.id,
-      consentimento_cookies,
-      consentimento_localizacao,
+      userId,
+      type,
+      Boolean(agreed),
+      version,
+      source,
+      metadata,
       ip_address,
       user_agent
     );
