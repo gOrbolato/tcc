@@ -213,7 +213,7 @@ const Avaliacao: React.FC = () => {
             fullWidth
             disabled={isSubmitting}
             size="large"
-            sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, py: 1.8, textTransform: 'none', borderRadius: 1 }}
+            sx={{ py: 1.8, textTransform: 'none', borderRadius: 1 }}
           >
             {isSubmitting ? 'Enviando...' : 'Enviar Avaliação'}
           </Button>

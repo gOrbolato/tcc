@@ -26,6 +26,7 @@ import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminUserManagement from '../pages/admin/AdminUserManagement';
 import InstitutionCourseManagement from '../pages/InstitutionCourseManagement';
 import Reports from '../pages/admin/reports';
+import SetNewPassword from '../pages/auth/SetNewPassword'; // NEW IMPORT
 // --- Fim das Importações ---
 
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -49,6 +50,7 @@ const AppRoutes = ({ location }: { location: Location }) => {
       <Route path="/recuperar-senha" element={<RecuperarSenha />} />
       <Route path="/resetar-senha/:token" element={<ResetarSenha />} />
       <Route path="/validar-codigo" element={<ValidarCodigoDesbloqueio />} />
+      <Route path="/set-new-password" element={<SetNewPassword />} /> {/* NEW ROUTE */}
 
       {/* Rota Home */}
       <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />

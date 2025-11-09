@@ -74,9 +74,23 @@ const generateAnalysisForInstitution = (institutionId_1, ...args_1) => __awaiter
         };
     }
     const previousEvaluations = yield fetchEvaluations(options.previousStart, options.previousEnd);
+    // NEW: Filter to keep only the latest evaluation per user for analysis
+    const filterLatestEvaluationPerUser = (evaluations) => {
+        const latestEvaluationsMap = new Map(); // Map<userId, latestEvaluation>
+        for (const evalItem of evaluations) {
+            const userId = evalItem.usuario_id;
+            const createdAt = new Date(evalItem.criado_em);
+            if (!latestEvaluationsMap.has(userId) || createdAt > new Date(latestEvaluationsMap.get(userId).criado_em)) {
+                latestEvaluationsMap.set(userId, evalItem);
+            }
+        }
+        return Array.from(latestEvaluationsMap.values());
+    };
+    const filteredCurrentEvaluations = filterLatestEvaluationPerUser(currentEvaluations);
+    const filteredPreviousEvaluations = filterLatestEvaluationPerUser(previousEvaluations);
     const dataForPython = {
-        current: currentEvaluations,
-        previous: previousEvaluations,
+        current: filteredCurrentEvaluations,
+        previous: filteredPreviousEvaluations,
     };
     return new Promise((resolve, reject) => {
         const scriptPath = path_1.default.join(__dirname, '..', '..', 'python_scripts', 'analyze_evaluations.py');

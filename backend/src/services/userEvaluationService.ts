@@ -36,14 +36,14 @@ export const submitEvaluation = async (data: EvaluationData) => {
     '102': 'equipamentos',
     '103': 'biblioteca',
     '104': 'suporte_mercado',
-    '105': 'localização',
+    '105': 'localizacao',
     '106': 'acessibilidade',
-    '107': 'direção',
-    '108': 'coordenação',
-    '109': 'didática',
-    '110': 'dinâmica_professores',
+    '107': 'direcao',
+    '108': 'coordenacao',
+    '109': 'didatica', // CORRECTED: removed accent
+    '110': 'dinamica_professores', // CORRECTED: removed accent
     '111': 'disponibilidade_professores',
-    '112': 'conteúdo',
+    '112': 'conteudo', // CORRECTED: removed accent
   };
 
   // Convert incoming answers like nota_<id> and comentario_<id> into nota_<category> / comentario_<category>

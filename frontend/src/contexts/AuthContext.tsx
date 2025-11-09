@@ -7,18 +7,20 @@ interface User {
   id: number;
   nome: string;
   isAdmin: boolean;
-  is_active?: boolean; // Adicionado
+  is_active?: boolean;
   email?: string;
   ra?: string;
+  is_trancado?: boolean; // ADDED
+  isViewOnly?: boolean; // ADDED
+  cpf?: string; // ADDED
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean; // Adicionado
+  isLoading: boolean;
   login: (email: string, senha: string) => Promise<User>;
   logout: () => void;
-  // Expose the setter so pages can update the user (e.g. Perfil)
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
@@ -26,7 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Adicionado
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const validateToken = async () => {
@@ -37,7 +39,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (decoded.exp * 1000 > Date.now()) {
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             const response = await api.get('/perfil');
-            setUser(response.data); // Define o usuário com os dados completos da API
+            console.log("DEBUG AuthContext: User set from /perfil:", response.data); // ADDED LOG
+            setUser(response.data);
           } else {
             localStorage.removeItem('authToken');
           }
@@ -56,6 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const response = await api.post('/auth/login', { email, senha });
     const { token, user: userData } = response.data;
     localStorage.setItem('authToken', token);
+    console.log("DEBUG AuthContext: User set from login:", userData); // ADDED LOG
     setUser(userData);
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     return userData;
