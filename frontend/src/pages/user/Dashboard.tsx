@@ -38,6 +38,7 @@ const Dashboard: React.FC = () => {
   // Hooks...
   const [completedEvaluations, setCompletedEvaluations] = useState<Avaliacao[]>([]);
   const [evaluationStatus, setEvaluationStatus] = useState<EvaluationStatus | null>(null);
+  const [overallAverage, setOverallAverage] = useState<number | null>(null); // NEW STATE
   const [loading, setLoading] = useState(true);
   const { showNotification } = useNotification();
   const { user } = useAuth();
@@ -62,6 +63,15 @@ const Dashboard: React.FC = () => {
         );
         setCompletedEvaluations(sortedEvaluations);
         setEvaluationStatus(statusResponse.data);
+
+        // Calculate overall average
+        if (sortedEvaluations.length > 0) {
+          const totalSum = sortedEvaluations.reduce((sum: number, evalItem: Avaliacao) => sum + evalItem.media_final, 0);
+          setOverallAverage(totalSum / sortedEvaluations.length);
+        } else {
+          setOverallAverage(null);
+        }
+
       } catch (error) {
         showNotification('Erro ao buscar dados do dashboard', 'error');
       } finally {
@@ -138,6 +148,25 @@ const Dashboard: React.FC = () => {
             </Paper>
           )}
         </Box>
+
+        {/* NEW CARD FOR OVERALL AVERAGE */}
+        {overallAverage !== null && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <Card sx={{ minWidth: 275, maxWidth: 450, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="h6" component="div" sx={{ mb: 1 }}>
+                  Média Geral de Suas Avaliações
+                </Typography>
+                <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                  {overallAverage.toFixed(2)}
+                </Typography>
+                <Typography variant="body2">
+                  / 5.00
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
 
         <Divider sx={{ mb: 4 }} />
 
