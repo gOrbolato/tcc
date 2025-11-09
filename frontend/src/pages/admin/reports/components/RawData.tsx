@@ -5,7 +5,7 @@ interface Evaluation {
   id: number;
   comentario_geral: string;
   media_final: number;
-  created_at: string;
+  criado_em: string;
 }
 
 interface RawDataProps {

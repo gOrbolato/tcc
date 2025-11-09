@@ -3,50 +3,132 @@ import path from 'path';
 import pool from '../config/database';
 import { RowDataPacket } from 'mysql2';
 
+interface TrendValue {
+  value: number;
+  delta: number | null;
+}
+
 interface AnalysisResult {
   suggestions: any[];
   averages_by_question: any;
   analysis_by_question: any;
+  total_evaluations: TrendValue;
+  average_media_final: TrendValue;
+  score_distribution: any;
+  executive_summary: string;
+  raw_data: any[];
 }
 
-export const generateAnalysisForInstitution = async (institutionId: number): Promise<AnalysisResult> => {
-  // 1. Buscar todas as avaliações para a instituição
-  const [evaluations] = await pool.query<RowDataPacket[]>(
-    'SELECT * FROM Avaliacoes WHERE instituicao_id = ?',
-    [institutionId]
-  );
+interface AnalysisOptions {
+  currentStart?: string;
+  currentEnd?: string;
+  previousStart?: string;
+  previousEnd?: string;
+}
 
-  if (evaluations.length === 0) {
-    return {
-      suggestions: [],
-      averages_by_question: {},
-      analysis_by_question: {},
-    };
-  }
+export const generatePdfReport = async (
+  institutionId: number,
+  options: AnalysisOptions = {}
+): Promise<Buffer> => {
+  const reportData = await generateAnalysisForInstitution(institutionId, options);
 
-  // 2. Executar o script Python como um processo filho
   return new Promise((resolve, reject) => {
-    const scriptPath = path.join(__dirname, '..', 'python_scripts', 'analyze_evaluations.py');
-    const pythonProcess = spawn('python', [scriptPath]);
+    const scriptPath = path.join(__dirname, '..', '..', 'python_scripts', 'generate_pdf.py');
+    const pythonProcess = spawn('C:\\Users\\GuilhermeOrbolato\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', [scriptPath]);
 
-    let resultJson = '';
+    let pdfBuffer = Buffer.alloc(0);
     let errorOutput = '';
 
-    // 3. Enviar os dados das avaliações para o stdin do script
-    pythonProcess.stdin.write(JSON.stringify(evaluations));
+    pythonProcess.stdin.write(JSON.stringify(reportData));
     pythonProcess.stdin.end();
 
-    // 4. Capturar a saída (stdout) do script
     pythonProcess.stdout.on('data', (data) => {
-      resultJson += data.toString();
+      pdfBuffer = Buffer.concat([pdfBuffer, data]);
     });
 
-    // Capturar erros
     pythonProcess.stderr.on('data', (data) => {
       errorOutput += data.toString();
     });
 
-    // 5. Quando o processo terminar, resolver a Promise com o resultado
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`Python PDF script exited with code ${code}`);
+        console.error(errorOutput);
+        return reject(new Error(`Erro ao gerar PDF: ${errorOutput}`));
+      }
+      if (pdfBuffer.length === 0) {
+        return reject(new Error('Script Python não retornou dados de PDF.'));
+      }
+      resolve(pdfBuffer);
+    });
+
+    pythonProcess.on('error', (err) => {
+      console.error('Erro ao iniciar o processo Python para PDF:', err);
+      reject(new Error(`Falha ao iniciar o gerador de PDF: ${err.message}`));
+    });
+  });
+};
+
+export const generateAnalysisForInstitution = async (
+  institutionId: number,
+  options: AnalysisOptions = {}
+): Promise<AnalysisResult> => {
+  
+  const fetchEvaluations = async (startDate?: string, endDate?: string): Promise<RowDataPacket[]> => {
+    let query = 'SELECT * FROM Avaliacoes WHERE instituicao_id = ?';
+    const params: (string | number)[] = [institutionId];
+
+    if (startDate && endDate) {
+      query += ' AND criado_em BETWEEN ? AND ?';
+      params.push(startDate, endDate);
+    }
+    
+    const [evaluations] = await pool.query<RowDataPacket[]>(query, params);
+    return evaluations;
+  };
+
+  const currentEvaluations = await fetchEvaluations(options.currentStart, options.currentEnd);
+  
+  if (currentEvaluations.length === 0) {
+    return {
+      suggestions: [],
+      averages_by_question: {},
+      analysis_by_question: {},
+      total_evaluations: { value: 0, delta: null },
+      average_media_final: { value: 0, delta: null },
+      score_distribution: {},
+      executive_summary: "Não há dados de avaliação para o período selecionado.",
+      raw_data: [],
+    };
+  }
+
+  const previousEvaluations = await fetchEvaluations(options.previousStart, options.previousEnd);
+
+  const dataForPython = {
+    current: currentEvaluations,
+    previous: previousEvaluations,
+  };
+
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, '..', '..', 'python_scripts', 'analyze_evaluations.py');
+    const pythonProcess = spawn('C:\\Users\\GuilhermeOrbolato\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', [scriptPath]);
+
+    let resultJson = '';
+    let errorOutput = '';
+
+    pythonProcess.stdin.write(JSON.stringify(dataForPython));
+    pythonProcess.stdin.end();
+
+    pythonProcess.stdout.setEncoding('utf8');
+    pythonProcess.stdout.on('data', (data) => {
+      resultJson += data;
+    });
+
+    pythonProcess.stderr.setEncoding('utf8');
+    pythonProcess.stderr.on('data', (data) => {
+      errorOutput += data;
+    });
+
     pythonProcess.on('close', (code) => {
       if (code !== 0) {
         console.error(`Python script exited with code ${code}`);
@@ -54,9 +136,17 @@ export const generateAnalysisForInstitution = async (institutionId: number): Pro
         return reject(new Error(`Erro ao executar o script de análise: ${errorOutput}`));
       }
       try {
+        console.log(`--- DEBUG: Raw Python stdout ---\n${resultJson}`);
+        if (!resultJson) {
+          console.error("Python script returned empty stdout.");
+          return reject(new Error("Python script returned empty stdout."));
+        }
         const result = JSON.parse(resultJson);
+        console.log(`--- DEBUG: Parsed Python result ---\n${JSON.stringify(result, null, 2)}`);
         resolve(result);
       } catch (e) {
+        console.error('Falha ao parsear o resultado do script Python:', e);
+        console.error('Raw output que causou o erro:', resultJson);
         reject(new Error('Falha ao parsear o resultado do script Python.'));
       }
     });

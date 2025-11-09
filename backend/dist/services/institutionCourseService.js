@@ -18,8 +18,9 @@ const getAllInstitutions = (q) => __awaiter(void 0, void 0, void 0, function* ()
     let query = 'SELECT id, nome, latitude, longitude FROM Instituicoes WHERE is_active = TRUE';
     const params = [];
     if (q) {
-        query += ' AND nome LIKE ?';
-        params.push(`%${q}%`);
+        const qNorm = q.trim().replace(/\s+/g, ' ').toLowerCase();
+        query += ' AND LOWER(nome) LIKE ?';
+        params.push(`%${qNorm}%`);
     }
     query += ' ORDER BY nome ASC';
     const [rows] = yield database_1.default.query(query, params);
@@ -35,8 +36,9 @@ const getCoursesByInstitution = (institutionId, q) => __awaiter(void 0, void 0, 
         params.push(institutionId);
     }
     if (q) {
-        whereClauses.push('nome LIKE ?');
-        params.push(`%${q}%`);
+        const qNorm = q.trim().replace(/\s+/g, ' ').toLowerCase();
+        whereClauses.push('LOWER(nome) LIKE ?');
+        params.push(`%${qNorm}%`);
     }
     if (whereClauses.length > 0) {
         query += ` AND ${whereClauses.join(' AND ')}`;
@@ -47,13 +49,15 @@ const getCoursesByInstitution = (institutionId, q) => __awaiter(void 0, void 0, 
 });
 exports.getCoursesByInstitution = getCoursesByInstitution;
 const updateInstitution = (institutionId, nome) => __awaiter(void 0, void 0, void 0, function* () {
-    yield database_1.default.query('UPDATE Instituicoes SET nome = ? WHERE id = ?', [nome, institutionId]);
+    const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
+    yield database_1.default.query('UPDATE Instituicoes SET nome = ? WHERE id = ?', [nomeNorm, institutionId]);
     const [rows] = yield database_1.default.query('SELECT id, nome FROM Instituicoes WHERE id = ?', [institutionId]);
     return rows[0];
 });
 exports.updateInstitution = updateInstitution;
 const updateCourse = (courseId, nome) => __awaiter(void 0, void 0, void 0, function* () {
-    yield database_1.default.query('UPDATE Cursos SET nome = ? WHERE id = ?', [nome, courseId]);
+    const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
+    yield database_1.default.query('UPDATE Cursos SET nome = ? WHERE id = ?', [nomeNorm, courseId]);
     const [rows] = yield database_1.default.query('SELECT id, nome FROM Cursos WHERE id = ?', [courseId]);
     return rows[0];
 });

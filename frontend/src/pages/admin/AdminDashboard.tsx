@@ -1,27 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { motion } from 'framer-motion';
 
-// 1. Importar componentes de Layout e Cards do MUI
 import {
   Container,
-  Card,
-  CardContent,
+  Paper,
   Typography,
   Button,
-  CardActions,
   Box,
   Icon,
   Chip,
 } from '@mui/material';
 
-// 2. Importar Ícones para os cards
 import PeopleIcon from '@mui/icons-material/People';
-import AssessmentIcon from '@mui/icons-material/Assessment';
 import SchoolIcon from '@mui/icons-material/School';
 import BarChartIcon from '@mui/icons-material/BarChart';
 
-// 3. (Opcional) Criar um tipo para os cards para facilitar
 type DashboardCardProps = {
   title: string;
   description: string;
@@ -29,39 +24,44 @@ type DashboardCardProps = {
   icon: React.ReactElement;
 };
 
-// 4. Componente de Card reutilizável
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+// Card reutilizável com novo design
 const DashboardCard: React.FC<DashboardCardProps> = ({ title, description, link, icon }) => (
-  <Box sx={{ width: '100%' }}>
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Icon color="primary" sx={{ mr: 1.5, fontSize: '2.5rem' }}>
-            {icon}
-          </Icon>
-          <Typography variant="h5" component="h2">
-            {title}
-          </Typography>
-        </Box>
-        <Typography color="text.secondary">
-          {description}
+  <motion.div
+    variants={cardVariants}
+    whileHover={{ y: -5, scale: 1.02 }}
+    style={{ height: '100%' }}
+  >
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Icon color="primary" sx={{ mr: 1.5, fontSize: '2.5rem' }}>
+          {icon}
+        </Icon>
+        <Typography variant="h5" component="h2" fontWeight={600}>
+          {title}
         </Typography>
-      </CardContent>
-      <CardActions>
-        <Button size="small" component={RouterLink} to={link}>
-          Acessar
-        </Button>
-      </CardActions>
-    </Card>
-  </Box>
+      </Box>
+      <Typography color="text.secondary" sx={{ flexGrow: 1 }}>
+        {description}
+      </Typography>
+      <Button variant="outlined" component={RouterLink} to={link} sx={{ mt: 2, alignSelf: 'flex-start' }}>
+        Acessar
+      </Button>
+    </Paper>
+  </motion.div>
 );
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const [userChanges, setUserChanges] = useState(0);
   const [entityChanges, setEntityChanges] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // fetch admin notifications and classify them
     let mounted = true;
     (async () => {
       try {
@@ -80,70 +80,74 @@ const AdminDashboard: React.FC = () => {
         setUserChanges(u);
         setEntityChanges(e);
       } catch (err) {
-        // ignore errors silently
+        // ignore
       }
     })();
     return () => { mounted = false; };
   }, []);
 
-  const navigate = useNavigate();
   return (
-    // 5. Usar <Container> para centralizar e limitar a largura
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Painel Administrativo
-      </Typography>
-      <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-        Bem-vindo, {user?.nome}!
-      </Typography>
+    <Box sx={{ py: 4 }}>
+      <Container maxWidth="lg">
+        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+          Painel Administrativo
+        </Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+          Bem-vindo, {user?.nome}!
+        </Typography>
 
-      {/* 6. Layout responsivo de cards usando CSS grid */}
-      <Box sx={{ display: 'grid', gap: 24, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' } }}>
-        <Box sx={{ position: 'relative' }}>
-          <DashboardCard
-            title="Gerenciar Usuários"
-            description="Editar ou remover usuários e permissões."
-            link="/admin/gerenciar-usuarios"
-            icon={<PeopleIcon />}
-          />
-          {userChanges > 0 && (
-            <Chip
-              label={`${userChanges} alterações`}
-              color="warning"
-              size="small"
-              clickable
-              onClick={() => navigate('/admin/gerenciar-usuarios?from=dashboard_notifications')}
-              sx={{ position: 'absolute', top: 8, right: 8, cursor: 'pointer' }}
+        <Box
+          component={motion.div}
+          initial="hidden"
+          animate="visible"
+          variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+          sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' } }}
+        >
+          <Box sx={{ position: 'relative' }}>
+            <DashboardCard
+              title="Gerenciar Usuários"
+              description="Ativar, desativar e editar usuários e suas permissões."
+              link="/admin/gerenciar-usuarios"
+              icon={<PeopleIcon />}
             />
-          )}
-        </Box>
-        <Box sx={{ position: 'relative' }}>
-          <DashboardCard
-            title="Gerenciar Entidades"
-            description="Editar instituições e/ou cursos."
-            link="/admin/gerenciar-entidades"
-            icon={<SchoolIcon />}
-          />
-          {entityChanges > 0 && (
-            <Chip
-              label={`${entityChanges} alterações`}
-              color="warning"
-              size="small"
-              clickable
-              onClick={() => navigate('/admin/gerenciar-entidades?from=dashboard_notifications')}
-              sx={{ position: 'absolute', top: 8, right: 8, cursor: 'pointer' }}
+            {userChanges > 0 && (
+              <Chip
+                label={`${userChanges} novas solicitações`}
+                color="warning"
+                size="small"
+                clickable
+                onClick={() => navigate('/admin/gerenciar-usuarios?from=dashboard_notifications')}
+                sx={{ position: 'absolute', top: 12, right: 12, cursor: 'pointer', fontWeight: 600 }}
+              />
+            )}
+          </Box>
+          <Box sx={{ position: 'relative' }}>
+            <DashboardCard
+              title="Gerenciar Entidades"
+              description="Adicionar e editar instituições e cursos disponíveis na plataforma."
+              link="/admin/gerenciar-entidades"
+              icon={<SchoolIcon />}
             />
-          )}
+            {entityChanges > 0 && (
+              <Chip
+                label={`${entityChanges} novas solicitações`}
+                color="warning"
+                size="small"
+                clickable
+                onClick={() => navigate('/admin/gerenciar-entidades?from=dashboard_notifications')}
+                sx={{ position: 'absolute', top: 12, right: 12, cursor: 'pointer', fontWeight: 600 }}
+              />
+            )}
+          </Box>
+          <DashboardCard
+            title="Relatórios"
+            description="Gerar e visualizar relatórios de dados das avaliações."
+            link="/admin/relatorios"
+            icon={<BarChartIcon />}
+          />
         </Box>
-        <DashboardCard
-          title="Relatórios"
-          description="Gerar e visualizar relatórios de dados das avaliações."
-          link="/admin/relatorios"
-          icon={<BarChartIcon />}
-        />
-        {/* Adicione mais cards conforme necessário */}
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

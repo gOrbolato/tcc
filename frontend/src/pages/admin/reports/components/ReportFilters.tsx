@@ -7,8 +7,18 @@ import type { Course } from '../../../../types/course';
 interface Instituicao { id: number; nome: string; }
 type Curso = Course;
 
+export interface SearchOptions {
+  institutionId?: number;
+  courseId?: number;
+  // Optional date range fields for trend comparisons (YYYY-MM-DD)
+  currentStart?: string;
+  currentEnd?: string;
+  previousStart?: string;
+  previousEnd?: string;
+}
+
 interface ReportFiltersProps {
-  onSearch: (institutionId?: number, courseId?: number) => void;
+  onSearch: (options: SearchOptions) => void;
   onClear: () => void;
   loading: boolean;
 }
@@ -20,30 +30,23 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onSearch, onClear, loadin
   const [selectedCourse, setSelectedCourse] = useState<Curso | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get('/institutions');
-        setInstitutions(res.data || []);
-      } catch (err) {
-        // Handle error
-      }
-    })();
+    api.get('/institutions').then(res => setInstitutions(res.data || [])).catch(console.error);
   }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        if (!selectedInstitution) {
-          setCourses([]);
-          return;
-        }
-        const res = await api.get(`/institutions/${selectedInstitution.id}/courses`);
-        setCourses(res.data || []);
-      } catch (err) {
-        // Handle error
-      }
-    })();
+    if (!selectedInstitution) {
+      setCourses([]);
+      return;
+    }
+    api.get(`/institutions/${selectedInstitution.id}/courses`).then(res => setCourses(res.data || [])).catch(console.error);
   }, [selectedInstitution]);
+
+  const handleSearch = () => {
+    onSearch({
+      institutionId: selectedInstitution?.id,
+      courseId: selectedCourse?.id,
+    });
+  };
 
   const handleClear = () => {
     setSelectedInstitution(null);
@@ -52,34 +55,30 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onSearch, onClear, loadin
   };
 
   return (
-    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-      <Box sx={{ display: 'flex', gap: 2, flex: 1, minWidth: 300 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 2, flex: 1, minWidth: { xs: '100%', md: 400 } }}>
         <Autocomplete
           options={institutions}
           getOptionLabel={(opt) => opt.nome || ''}
           value={selectedInstitution}
           onChange={(e, v) => setSelectedInstitution(v)}
-          renderInput={(params) => <TextField {...params} label="Todas as Instituições" />}
-          size="small"
-          clearOnEscape
-          sx={{ flex: 1, '& .MuiInputBase-root': { height: 56 }, '& .MuiInputBase-input': { display: 'flex', alignItems: 'center', height: '56px' } }}
+          renderInput={(params) => <TextField {...params} label="Instituição" />}
+          sx={{ flex: 1 }}
         />
         <Autocomplete
           options={courses}
           getOptionLabel={(opt) => opt.nome || ''}
           value={selectedCourse}
           onChange={(e, v) => setSelectedCourse(v)}
-          renderInput={(params) => <TextField {...params} label="Todos os Cursos" />}
-          size="small"
-          clearOnEscape
+          renderInput={(params) => <TextField {...params} label="Curso (Opcional)" />}
           disabled={!selectedInstitution}
-          sx={{ width: 320, '& .MuiInputBase-root': { height: 56 }, '& .MuiInputBase-input': { display: 'flex', alignItems: 'center', height: '56px' } }}
+          sx={{ flex: 1 }}
         />
       </Box>
-
+      
       <Box>
         <FilterActions
-          onSearch={() => onSearch(selectedInstitution?.id, selectedCourse?.id)}
+          onSearch={handleSearch}
           onClear={handleClear}
           searching={loading}
         />

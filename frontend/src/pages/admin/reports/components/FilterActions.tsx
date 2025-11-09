@@ -15,10 +15,11 @@ const FilterActions: React.FC<Props> = ({ onSearch, onClear, searching = false, 
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
       <Button
         variant="contained"
+        color="primary"
         onClick={onSearch}
         disabled={searching}
         startIcon={<SearchIcon />}
-        sx={{ bgcolor: '#6a4cff', '&:hover': { bgcolor: '#5b3ef0' }, height: 56, px: 3 }}
+        sx={{ height: 56, px: 3 }}
       >
         {searching ? 'Carregando...' : searchLabel}
       </Button>

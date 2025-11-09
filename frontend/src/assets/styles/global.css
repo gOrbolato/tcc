@@ -1,19 +1,22 @@
-/* Estilos Globais */
+/* Estilos Globais Modernizados */
 :root {
-  --primary-color: #4a90e2;
-  --secondary-color: #50e3c2;
-  --background-color: #f4f7f6;
-  --text-color: #333;
-  --card-bg-color: #fff;
-  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --primary-color: #6a4cff; /* Roxo vibrante para destaque */
+  --secondary-color: #9b59ff; /* variação roxa */
+  --background-color: #0b0b0c; /* Preto suave para fundo */
+  --text-color: #e6eef8; /* Texto claro para contraste no fundo escuro */
+  --text-secondary-color: #bfc7d2; /* Texto secundário claro */
+  --card-bg-color: #0f1720; /* Cards/panels escuros */
+  --shadow: 0 6px 18px rgba(0,0,0,0.6);
+  --shadow-lg: 0 12px 30px rgba(0,0,0,0.65);
 }
 
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: var(--background-color);
+  background: var(--background-color);
   color: var(--text-color);
 }
+
 
 .app-container {
   display: flex;
@@ -27,9 +30,10 @@ body {
 
 /* Header e Footer */
 .header, .footer {
-  background-color: var(--card-bg-color);
-  padding: 0.5rem 1rem; /* reduced padding to make footer/header more compact */
+  background: linear-gradient(90deg, rgba(10,10,12,0.95), rgba(45,15,80,0.9));
+  padding: 0.5rem 1rem;
   box-shadow: var(--shadow);
+  color: var(--text-color);
 }
 
 .header .container {
@@ -44,7 +48,7 @@ body {
   font-weight: bold;
   font-size: 1.5rem;
   text-decoration: none;
-  color: var(--primary-color);
+  color: var(--secondary-color);
 }
 
 .header nav a, .header nav button {
@@ -68,10 +72,34 @@ body {
 .footer {
   text-align: center;
   margin-top: auto;
-  font-size: 0.85rem; /* slightly smaller global footer font */
+  font-size: 0.85rem;
 }
 
-/* Specific compact styles for MUI Footer Box layout */
+/* MUI dark input styling - applied globally to make email/password fields dark and rounded */
+.MuiOutlinedInput-root {
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+}
+.MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 4px rgba(106,76,255,0.12);
+}
+.MuiOutlinedInput-input {
+  color: var(--text-color);
+  padding: 14px 16px;
+}
+.MuiInputLabel-root {
+  color: rgba(230,238,248,0.7);
+}
+.MuiFormHelperText-root {
+  color: rgba(230,238,248,0.65);
+}
+
+/* Make buttons use primary purple by default */
+.MuiButton-contained {
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  color: white;
+}
+
 .footer .MuiContainer-root {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;

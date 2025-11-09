@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import * as institutionCourseService from '../services/institutionCourseService';
+import pool from '../config/database';
+import { RowDataPacket } from 'mysql2';
 
 export const getInstitutions = async (req: Request, res: Response) => {
   try {
@@ -23,8 +25,21 @@ export const getCourses = async (req: Request, res: Response) => {
 
 // Dummy implementations for the missing functions
 
-export const createInstitution = async (_req: Request, res: Response) => {
-  res.status(501).json({ message: 'Not Implemented' });
+export const createInstitution = async (req: Request, res: Response) => {
+  try {
+    const { nome, latitude, longitude } = req.body as any;
+    if (!nome) return res.status(400).json({ message: 'Nome da instituição é obrigatório.' });
+    const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
+    // Avoid duplicates (case-insensitive)
+    const [exists] = await pool.query<RowDataPacket[]>('SELECT id FROM Instituicoes WHERE LOWER(nome) = ?', [nomeNorm.toLowerCase()]);
+    if (exists.length > 0) return res.status(409).json({ message: 'Instituição já existe.' });
+    const [result] = await pool.query<any>('INSERT INTO Instituicoes (nome, latitude, longitude, is_active) VALUES (?, ?, ?, TRUE)', [nomeNorm, latitude || null, longitude || null]);
+    const insertId = result.insertId;
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT id, nome, latitude, longitude FROM Instituicoes WHERE id = ?', [insertId]);
+    res.status(201).json(rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const updateInstitution = async (req: Request, res: Response) => {
@@ -48,8 +63,20 @@ export const deleteInstitution = async (req: Request, res: Response) => {
   }
 };
 
-export const createCourse = async (_req: Request, res: Response) => {
-  res.status(501).json({ message: 'Not Implemented' });
+export const createCourse = async (req: Request, res: Response) => {
+  try {
+    const { nome, instituicao_id } = req.body as any;
+    if (!nome || !instituicao_id) return res.status(400).json({ message: 'Nome do curso e instituicao_id são obrigatórios.' });
+    const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
+    const [exists] = await pool.query<RowDataPacket[]>('SELECT id FROM Cursos WHERE LOWER(nome) = ? AND instituicao_id = ?', [nomeNorm.toLowerCase(), instituicao_id]);
+    if (exists.length > 0) return res.status(409).json({ message: 'Curso já existe para essa instituição.' });
+    const [result] = await pool.query<any>('INSERT INTO Cursos (nome, instituicao_id, is_active) VALUES (?, ?, TRUE)', [nomeNorm, instituicao_id]);
+    const insertId = result.insertId;
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT id, nome, instituicao_id FROM Cursos WHERE id = ?', [insertId]);
+    res.status(201).json(rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const updateCourse = async (req: Request, res: Response) => {
@@ -73,8 +100,14 @@ export const deleteCourse = async (req: Request, res: Response) => {
   }
 };
 
-export const getCoursesByInstitution = async (_req: Request, res: Response) => {
-  res.status(501).json({ message: 'Not Implemented' });
+export const getCoursesByInstitution = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const courses = await institutionCourseService.getCoursesByInstitution(Number(id));
+    res.status(200).json(courses);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erro ao buscar cursos da instituição.', error: error.message });
+  }
 };
 
 export const getInstitutionsNearby = async (req: Request, res: Response) => {

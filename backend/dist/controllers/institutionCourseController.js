@@ -41,9 +41,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getInstitutionsNearby = exports.getCoursesByInstitution = exports.deleteCourse = exports.updateCourse = exports.createCourse = exports.deleteInstitution = exports.updateInstitution = exports.createInstitution = exports.getCourses = exports.getInstitutions = void 0;
 const institutionCourseService = __importStar(require("../services/institutionCourseService"));
+const database_1 = __importDefault(require("../config/database"));
 const getInstitutions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { q } = req.query;
@@ -67,8 +71,24 @@ const getCourses = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.getCourses = getCourses;
 // Dummy implementations for the missing functions
-const createInstitution = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.status(501).json({ message: 'Not Implemented' });
+const createInstitution = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { nome, latitude, longitude } = req.body;
+        if (!nome)
+            return res.status(400).json({ message: 'Nome da instituição é obrigatório.' });
+        const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
+        // Avoid duplicates (case-insensitive)
+        const [exists] = yield database_1.default.query('SELECT id FROM Instituicoes WHERE LOWER(nome) = ?', [nomeNorm.toLowerCase()]);
+        if (exists.length > 0)
+            return res.status(409).json({ message: 'Instituição já existe.' });
+        const [result] = yield database_1.default.query('INSERT INTO Instituicoes (nome, latitude, longitude, is_active) VALUES (?, ?, ?, TRUE)', [nomeNorm, latitude || null, longitude || null]);
+        const insertId = result.insertId;
+        const [rows] = yield database_1.default.query('SELECT id, nome, latitude, longitude FROM Instituicoes WHERE id = ?', [insertId]);
+        res.status(201).json(rows[0]);
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 exports.createInstitution = createInstitution;
 const updateInstitution = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -94,8 +114,23 @@ const deleteInstitution = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.deleteInstitution = deleteInstitution;
-const createCourse = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.status(501).json({ message: 'Not Implemented' });
+const createCourse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { nome, instituicao_id } = req.body;
+        if (!nome || !instituicao_id)
+            return res.status(400).json({ message: 'Nome do curso e instituicao_id são obrigatórios.' });
+        const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
+        const [exists] = yield database_1.default.query('SELECT id FROM Cursos WHERE LOWER(nome) = ? AND instituicao_id = ?', [nomeNorm.toLowerCase(), instituicao_id]);
+        if (exists.length > 0)
+            return res.status(409).json({ message: 'Curso já existe para essa instituição.' });
+        const [result] = yield database_1.default.query('INSERT INTO Cursos (nome, instituicao_id, is_active) VALUES (?, ?, TRUE)', [nomeNorm, instituicao_id]);
+        const insertId = result.insertId;
+        const [rows] = yield database_1.default.query('SELECT id, nome, instituicao_id FROM Cursos WHERE id = ?', [insertId]);
+        res.status(201).json(rows[0]);
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 exports.createCourse = createCourse;
 const updateCourse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -121,8 +156,15 @@ const deleteCourse = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.deleteCourse = deleteCourse;
-const getCoursesByInstitution = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.status(501).json({ message: 'Not Implemented' });
+const getCoursesByInstitution = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const courses = yield institutionCourseService.getCoursesByInstitution(Number(id));
+        res.status(200).json(courses);
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar cursos da instituição.', error: error.message });
+    }
 });
 exports.getCoursesByInstitution = getCoursesByInstitution;
 const getInstitutionsNearby = (req, res) => __awaiter(void 0, void 0, void 0, function* () {

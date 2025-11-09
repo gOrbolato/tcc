@@ -57,6 +57,12 @@ const Login: React.FC = () => {
         */}
         <TextField
           margin="normal"
+          InputLabelProps={{ style: { color: 'rgba(15,23,32,0.6)' } }}
+          inputProps={{
+            style: { color: 'rgba(15,23,32,0.95)' },
+            placeholder: 'endereco@exemplo.com'
+          }}
+          sx={{ '&& .MuiOutlinedInput-root': { background: 'rgba(244,246,248,0.9)', borderRadius: 3 }, '&& .MuiOutlinedInput-input': { color: 'rgba(15,23,32,0.95)' } }}
           required
           fullWidth
           id="email"
@@ -78,6 +84,9 @@ const Login: React.FC = () => {
           autoComplete="current-password"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
+          InputLabelProps={{ style: { color: 'rgba(15,23,32,0.6)' } }}
+          inputProps={{ style: { color: 'rgba(15,23,32,0.95)' } }}
+          sx={{ '&& .MuiOutlinedInput-root': { background: 'rgba(244,246,248,0.9)', borderRadius: 3 }, '&& .MuiOutlinedInput-input': { color: 'rgba(15,23,32,0.95)' } }}
         />
         
         {/* 5. Substituir as opções de formulário */}

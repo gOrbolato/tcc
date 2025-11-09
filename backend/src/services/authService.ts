@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { OkPacket, RowDataPacket } from 'mysql2';
 import { UsuarioRow } from '../types/user';
 import crypto from 'crypto';
+import { logAutoCreatedEntity } from './autoEntityService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'seu_segredo_jwt_aqui';
 
@@ -67,20 +68,84 @@ export const register = async (userData: any) => {
   // Resolver instituição e curso: se institutionText/courseText fornecidos, tentar encontrar por nome ou criar
   let finalInstituicaoId = instituicao_id;
   let finalCursoId = curso_id;
+  // Normalização simples: trim, collapse múltiplos espaços
+  const normalize = (s: any) => {
+    if (!s && s !== '') return s;
+    return String(s).trim().replace(/\s+/g, ' ');
+  };
 
-  // If institutionText/courseText provided, try to find matching records by name but DO NOT create new ones.
-  if (!finalInstituicaoId && institutionText) {
-    const [instRows] = await pool.query<RowDataPacket[]>('SELECT id FROM Instituicoes WHERE nome = ?', [institutionText]);
-    if (instRows.length > 0) finalInstituicaoId = instRows[0].id;
-    // else: leave as undefined/null (do not create automatically)
+  const institutionTextNorm = normalize(institutionText);
+  const courseTextNorm = normalize(courseText);
+
+  // Logic for Institution
+  if (!finalInstituicaoId && institutionTextNorm) {
+    let institutionId: number | null = null;
+
+    // 1. Try to find the institution
+    const [instRows] = await pool.query<RowDataPacket[]>("SELECT id FROM Instituicoes WHERE LOWER(nome) = ?", [institutionTextNorm.toLowerCase()]);
+    
+    if (instRows.length > 0) {
+        institutionId = instRows[0].id;
+    } else {
+        // 2. If not found, create it
+        try {
+            const [insertInst] = await pool.query<OkPacket>('INSERT INTO Instituicoes (nome, is_active) VALUES (?, TRUE)', [institutionTextNorm]);
+            if (insertInst.insertId) {
+                institutionId = insertInst.insertId;
+                // Optional: log the auto-creation
+                await logAutoCreatedEntity('instituicao', institutionTextNorm, email, { createdId: institutionId }).catch(e => console.error("Logging failed", e));
+            }
+        } catch (error: any) {
+            // This can happen in a race condition where another request created the institution between our SELECT and INSERT.
+            // In that case, we just re-fetch it.
+            if (error.code === 'ER_DUP_ENTRY') {
+                const [refetchRows] = await pool.query<RowDataPacket[]>("SELECT id FROM Instituicoes WHERE LOWER(nome) = ?", [institutionTextNorm.toLowerCase()]);
+                if (refetchRows.length > 0) {
+                    institutionId = refetchRows[0].id;
+                }
+            } else {
+                // For other errors, we might want to throw
+                throw error;
+            }
+        }
+    }
+    finalInstituicaoId = institutionId;
   }
 
-  if (!finalCursoId && courseText && finalInstituicaoId) {
-    const [cursoRows] = await pool.query<RowDataPacket[]>('SELECT id FROM Cursos WHERE nome = ? AND instituicao_id = ?', [courseText, finalInstituicaoId]);
-    if (cursoRows.length > 0) finalCursoId = cursoRows[0].id;
-    // else: leave as undefined/null (do not create automatically)
-  }
+  // Logic for Course
+  if (!finalCursoId && courseTextNorm && finalInstituicaoId) {
+    let courseId: number | null = null;
 
+    // 1. Try to find the course
+    const [cursoRows] = await pool.query<RowDataPacket[]>("SELECT id FROM Cursos WHERE LOWER(nome) = ? AND instituicao_id = ?", [courseTextNorm.toLowerCase(), finalInstituicaoId]);
+    
+    if (cursoRows.length > 0) {
+        courseId = cursoRows[0].id;
+    } else {
+        // 2. If not found, create it
+        try {
+            const [insertCourse] = await pool.query<OkPacket>('INSERT INTO Cursos (nome, instituicao_id, is_active) VALUES (?, ?, TRUE)', [courseTextNorm, finalInstituicaoId]);
+            if (insertCourse.insertId) {
+                courseId = insertCourse.insertId;
+                // Optional: log the auto-creation
+                await logAutoCreatedEntity('curso', courseTextNorm, email, { createdId: courseId, instituicaoId: finalInstituicaoId }).catch(e => console.error("Logging failed", e));
+            }
+        } catch (error: any) {
+            // This can happen in a race condition where another request created the course between our SELECT and INSERT.
+            // In that case, we just re-fetch it.
+            if (error.code === 'ER_DUP_ENTRY') {
+                const [refetchRows] = await pool.query<RowDataPacket[]>("SELECT id FROM Cursos WHERE LOWER(nome) = ? AND instituicao_id = ?", [courseTextNorm.toLowerCase(), finalInstituicaoId]);
+                if (refetchRows.length > 0) {
+                    courseId = refetchRows[0].id;
+                }
+            } else {
+                // For other errors, we might want to throw
+                throw error;
+            }
+        }
+    }
+    finalCursoId = courseId;
+  }
   // Gerar anonymized_id
   const anonymizedId = crypto.randomBytes(16).toString('hex');
 

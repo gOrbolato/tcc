@@ -16,14 +16,6 @@ import {
   Button,
   CircularProgress,
   Box,
-  TextField,
-  IconButton,
-  Tooltip,
-  Autocomplete,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 
 // 2. Importar Ícones para ações
@@ -31,7 +23,6 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
-import EditUserModal from './components/EditUserModal';
 
 // 3. Definir o tipo de dado do Usuário
 import type { User } from '../../types/user';
@@ -39,19 +30,7 @@ import type { User } from '../../types/user';
 const AdminUserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userToRemove, setUserToRemove] = useState<User | null>(null);
 
-  const handleRemoveUser = async () => {
-    if (!userToRemove) return;
-    try {
-      await api.delete(`/admin/users/${userToRemove.id}`);
-      showNotification('Usuário removido com sucesso', 'success');
-      setUsers(prev => prev.filter(u => u.id !== userToRemove.id));
-      setUserToRemove(null);
-    } catch (error) {
-      showNotification('Erro ao remover usuário', 'error');
-    }
-  };
   const { showNotification } = useNotification();
 
   const fetchUsers = async (filters?: { institutionId?: number | undefined; courseId?: number | undefined; anonymizedId?: string | undefined; }) => {
@@ -94,24 +73,7 @@ const AdminUserManagement: React.FC = () => {
     fetchDesbloqueios();
   }, []);
 
-  // Edit/Delete operations removed from UI (no create/edit from admin pages)
-
-  const handleToggleActive = async (user: User) => {
-    try {
-      await api.patch(`/admin/users/${user.id}`, { is_active: !user.isActive });
-      showNotification(`Usuário ${user.isActive ? 'desativado' : 'ativado'} com sucesso`, 'success');
-      fetchUsers(); // Recarrega a lista
-    } catch (error) {
-      showNotification('Erro ao alterar status do usuário', 'error');
-    }
-  };
-
-
-  const [userToEdit, setUserToEdit] = useState<User | null>(null);
-
-  const handleUserUpdated = (updatedUser: User) => {
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-  };
+  // Admins should not edit users here. Activation/removal is handled only via desbloqueio requests.
 
   if (loading) {
     return (
@@ -123,12 +85,7 @@ const AdminUserManagement: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <EditUserModal
-        user={userToEdit}
-        open={!!userToEdit}
-        onClose={() => setUserToEdit(null)}
-        onUserUpdated={handleUserUpdated}
-      />
+      {/* Editing users is disabled for admins in this UI. */}
       <Typography variant="h4" component="h1" gutterBottom>
         Gerenciamento de Usuários
       </Typography>
@@ -142,14 +99,14 @@ const AdminUserManagement: React.FC = () => {
               <TableCell sx={{ px: 2 }}>Instituição</TableCell>
               <TableCell sx={{ px: 2 }}>Curso</TableCell>
               <TableCell sx={{ px: 2, width: 110, textAlign: 'center' }}>Ativo</TableCell>
-                                            <TableCell align="right" sx={{ pr: 3, width: 240 }}>Ações</TableCell>            </TableRow>
+            </TableRow>
           </TableHead>
           <TableBody>
             {users.map((user) => (
               <TableRow key={user.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                 <TableCell sx={{ pl: 3, width: 320, fontFamily: 'monospace', wordBreak: 'break-all' }}>{user.anonymized_id || 'N/A'}</TableCell>
-                <TableCell sx={{ px: 2 }}>{user.instituicao_nome || 'N/A'}</TableCell>
-                <TableCell sx={{ px: 2 }}>{user.curso_nome || 'N/A'}</TableCell>
+                <TableCell sx={{ px: 2 }}>{user.instituicao_nome ?? '—'}</TableCell>
+                <TableCell sx={{ px: 2 }}>{user.curso_nome ?? '—'}</TableCell>
                 <TableCell sx={{ px: 2, width: 110, textAlign: 'center' }}>
                   {user.isActive ? (
                     <CheckCircleIcon color="success" />
@@ -157,15 +114,7 @@ const AdminUserManagement: React.FC = () => {
                     <CancelIcon color="error" />
                   )}
                 </TableCell>
-                <TableCell align="right" sx={{ pr: 3, width: 240 }}>
-                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-                    <Button variant="outlined" size="small" color="primary" onClick={() => handleToggleActive(user)}>
-                      {user.isActive ? 'Desativar' : 'Ativar'}
-                    </Button>
-                    <Button variant="outlined" size="small" color="primary" onClick={() => setUserToEdit(user)}>Editar</Button>
-                    <Button variant="outlined" size="small" color="error" onClick={() => setUserToRemove(user)}>Remover</Button>
-                  </Box>
-                </TableCell>
+                {/* No per-user actions here. Activation/removal only via Desbloqueio requests. */}
               </TableRow>
             ))}
           </TableBody>
@@ -219,16 +168,7 @@ const AdminUserManagement: React.FC = () => {
           </TableContainer>
         )}
       </Box>
-      <Dialog open={!!userToRemove} onClose={() => setUserToRemove(null)}>
-        <DialogTitle>Confirmar Remoção</DialogTitle>
-        <DialogContent>
-          <Typography>Tem certeza que deseja remover o usuário {userToRemove?.nome}?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUserToRemove(null)}>Cancelar</Button>
-          <Button onClick={handleRemoveUser} color="error">Remover</Button>
-        </DialogActions>
-      </Dialog>
+      {/* Removal confirmation via user row is disabled. Use "Pedidos de Desbloqueio" actions to approve/reject and update users. */}
     </Container>
   );
 };

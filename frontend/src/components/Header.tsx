@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { motion } from 'framer-motion';
 
-// 1. Importar componentes de AppBar, Ícones e Menu
 import {
   AppBar,
   Toolbar,
@@ -15,39 +15,35 @@ import {
   Avatar,
   ListItemIcon,
   Divider,
+  useScrollTrigger,
+  Slide,
 } from '@mui/material';
 
-// 2. Importar Ícones
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Logout from '@mui/icons-material/Logout';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+
+// HOC para esconder o header ao rolar
+function HideOnScroll(props: { children: React.ReactElement }) {
+  const trigger = useScrollTrigger();
+  return (
+    <Slide appear={false} direction="down" in={!trigger}>
+      {props.children}
+    </Slide>
+  );
+}
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // 3. State para controlar os menus (móvel e perfil)
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState<null | HTMLElement>(null);
   const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(null);
 
-  const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
-  const isProfileMenuOpen = Boolean(profileAnchorEl);
-
-  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMobileMoreAnchorEl(event.currentTarget);
-  };
-  const handleMobileMenuClose = () => {
-    setMobileMoreAnchorEl(null);
-  };
-
-  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setProfileAnchorEl(event.currentTarget);
-  };
-  const handleProfileMenuClose = () => {
-    setProfileAnchorEl(null);
-  };
+  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => setMobileMoreAnchorEl(event.currentTarget);
+  const handleMobileMenuClose = () => setMobileMoreAnchorEl(null);
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => setProfileAnchorEl(event.currentTarget);
+  const handleProfileMenuClose = () => setProfileAnchorEl(null);
 
   const handleLogout = () => {
     handleProfileMenuClose();
@@ -55,132 +51,103 @@ const Header: React.FC = () => {
     navigate('/');
   };
 
-  // 4. Links para o menu de perfil
-  const profileMenuItems = [
-    <MenuItem
-      key="profile"
-      component={RouterLink}
-      to="/perfil"
-      onClick={handleProfileMenuClose}
-    >
-      <ListItemIcon>
-        <AccountCircle fontSize="small" />
-      </ListItemIcon>
+  const handleNavigation = () => {
+    if (isAuthenticated && user) {
+      navigate(user.isAdmin ? '/admin/dashboard' : '/dashboard');
+    } else {
+      navigate('/');
+    }
+  };
+
+  const authMenuItems = [
+    <MenuItem key="login" component={RouterLink} to="/login" onClick={handleMobileMenuClose}>Login</MenuItem>,
+    <MenuItem key="register" component={RouterLink} to="/registro" onClick={handleMobileMenuClose}>Registrar</MenuItem>,
+  ];
+
+  const userMenuItems = [
+    <MenuItem key="profile" component={RouterLink} to="/perfil" onClick={handleProfileMenuClose}>
+      <ListItemIcon><AccountCircle fontSize="small" /></ListItemIcon>
       Perfil
     </MenuItem>,
-    
     <Divider key="divider" />,
     <MenuItem key="logout" onClick={handleLogout}>
-      <ListItemIcon>
-        <Logout fontSize="small" />
-      </ListItemIcon>
+      <ListItemIcon><Logout fontSize="small" /></ListItemIcon>
       Sair
     </MenuItem>,
   ];
 
-  // 5. Links para o menu de desktop (escondido no mobile)
   const renderDesktopMenu = (
-    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
       {isAuthenticated && user ? (
         <>
           <Typography sx={{ mr: 2 }}>Olá, {user.nome.split(' ')[0]}</Typography>
-          <IconButton
-            size="large"
-            edge="end"
-            onClick={handleProfileMenuOpen}
-            color="inherit"
-          >
-            {/* Usar Avatar com a inicial do usuário */}
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-              {user.nome[0].toUpperCase()}
-            </Avatar>
-          </IconButton>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+            <IconButton size="large" edge="end" onClick={handleProfileMenuOpen} color="inherit">
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                {user.nome[0].toUpperCase()}
+              </Avatar>
+            </IconButton>
+          </motion.div>
         </>
       ) : (
         <>
-          <Button color="inherit" component={RouterLink} to="/login">
-            Login
-          </Button>
-          <Button color="inherit" component={RouterLink} to="/registro">
-            Registro
-          </Button>
+          <Button variant="outlined" color="inherit" component={RouterLink} to="/login">Login</Button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button variant="contained" color="primary" component={RouterLink} to="/registro">
+              Registrar
+            </Button>
+          </motion.div>
         </>
       )}
     </Box>
   );
 
-  // 6. Links para o menu móvel (escondido no desktop)
   const renderMobileMenu = (
     <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-      <IconButton
-        size="large"
-        edge="end"
-        color="inherit"
-        onClick={handleMobileMenuOpen}
-      >
+      <IconButton size="large" edge="end" color="inherit" onClick={handleMobileMenuOpen}>
         <MenuIcon />
       </IconButton>
     </Box>
   );
 
   return (
-    // 7. Usar AppBar no lugar de <header>
-    <AppBar position="static">
-      <Toolbar>
-        {/* Título/Logo à esquerda */}
-        <Typography
-          variant="h6"
-          sx={{
-            flexGrow: 1, // Empurra todo o resto para a direita
-            color: 'inherit',
-            textDecoration: 'none',
-            cursor: 'pointer',
-          }}
-          onClick={() => {
-            if (isAuthenticated && user) {
-              if (user.isAdmin) navigate('/admin/dashboard');
-              else navigate('/dashboard');
-            } else {
-              navigate('/');
-            }
-          }}
+    <HideOnScroll>
+      <AppBar position="sticky">
+        <Toolbar>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 'bold', cursor: 'pointer' }}
+            onClick={handleNavigation}
+          >
+            Avaliação Educacional
+          </Typography>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          {renderDesktopMenu}
+          {renderMobileMenu}
+        </Toolbar>
+
+        {/* Menu de Perfil */}
+        <Menu
+          anchorEl={profileAnchorEl}
+          open={Boolean(profileAnchorEl)}
+          onClose={handleProfileMenuClose}
+          sx={{ mt: 1 }}
         >
-          Avaliação Educacional
-        </Typography>
+          {userMenuItems}
+        </Menu>
 
-        {/* Menus da direita */}
-        {renderDesktopMenu}
-        {renderMobileMenu}
-      </Toolbar>
-
-      {/* 8. Declarar os Menus que abrem */}
-      <Menu
-        anchorEl={profileAnchorEl}
-        open={isProfileMenuOpen}
-        onClose={handleProfileMenuClose}
-      >
-        {profileMenuItems}
-      </Menu>
-
-      <Menu
-        anchorEl={mobileMoreAnchorEl}
-        open={isMobileMenuOpen}
-        onClose={handleMobileMenuClose}
-      >
-        {isAuthenticated && user ? (
-          profileMenuItems // Reutiliza os mesmos links do perfil no mobile
-        ) : (
-          [
-            <MenuItem key="login" component={RouterLink} to="/login" onClick={handleMobileMenuClose}>
-              Login
-            </MenuItem>,
-            <MenuItem key="register" component={RouterLink} to="/registro" onClick={handleMobileMenuClose}>
-              Registro
-            </MenuItem>,
-          ]
-        )}
-      </Menu>
-    </AppBar>
+        {/* Menu Mobile */}
+        <Menu
+          anchorEl={mobileMoreAnchorEl}
+          open={Boolean(mobileMoreAnchorEl)}
+          onClose={handleMobileMenuClose}
+        >
+          {isAuthenticated ? userMenuItems : authMenuItems}
+        </Menu>
+      </AppBar>
+    </HideOnScroll>
   );
 };
 

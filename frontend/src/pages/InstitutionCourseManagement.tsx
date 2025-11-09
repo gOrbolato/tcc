@@ -232,6 +232,7 @@ const InstitutionCourseManagement: React.FC = () => {
               loading={loadingCourses}
               onDelete={deleteCourse}
               onSearch={(instId, q) => fetchCourses(instId, q)}
+              onEdit={(course) => setCourseToEdit(course)}
             />
           )}
         </Box>

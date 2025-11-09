@@ -25,7 +25,12 @@ const getAdminById = (adminId) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.getAdminById = getAdminById;
 const getUserById = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const [rows] = yield database_1.default.query('SELECT id, nome, email, cpf, ra, instituicao_id, curso_id, periodo, semestre, previsao_termino, anonymized_id, is_active, is_trancado, desbloqueio_aprovado_em FROM Usuarios WHERE id = ?', [userId]);
+    const [rows] = yield database_1.default.query(`SELECT u.id, u.nome, u.email, u.cpf, u.ra, u.instituicao_id, u.curso_id, u.periodo, u.semestre, u.previsao_termino, u.anonymized_id, u.is_active, u.is_trancado, u.desbloqueio_aprovado_em,
+            i.nome AS instituicao_nome, c.nome AS curso_nome
+     FROM Usuarios u
+     LEFT JOIN Instituicoes i ON u.instituicao_id = i.id
+     LEFT JOIN Cursos c ON u.curso_id = c.id
+     WHERE u.id = ?`, [userId]);
     if (rows.length === 0) {
         throw new Error('Usuário não encontrado.');
     }

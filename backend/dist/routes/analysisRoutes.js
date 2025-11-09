@@ -7,4 +7,6 @@ const router = (0, express_1.Router)();
 // Rota para obter a análise de uma instituição
 // Protegida para que apenas administradores autenticados possam acessá-la
 router.get('/analysis/institution/:id', authMiddleware_1.authenticate, authMiddleware_1.adminOnly, analysisController_1.getInstitutionAnalysis);
+// Nova rota para download do relatório em PDF
+router.get('/analysis/institution/:id/pdf', authMiddleware_1.authenticate, authMiddleware_1.adminOnly, analysisController_1.downloadReportPdf);
 exports.default = router;

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getInstitutionAnalysis } from '../controllers/analysisController';
+import { getInstitutionAnalysis, downloadReportPdf } from '../controllers/analysisController';
 import { authenticate, adminOnly } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -11,6 +11,14 @@ router.get(
   authenticate, 
   adminOnly,
   getInstitutionAnalysis
+);
+
+// Nova rota para download do relatório em PDF
+router.get(
+  '/analysis/institution/:id/pdf',
+  authenticate,
+  adminOnly,
+  downloadReportPdf
 );
 
 export default router;

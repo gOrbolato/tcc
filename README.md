@@ -13,7 +13,7 @@ A plataforma permite que o público geral pesquise e visualize avaliações sobr
 - **Cadastro de Usuário:** Processo de registro validado para alunos.
 - **Login Unificado:** Um único ambiente de login que redireciona usuários comuns e administradores para seus respectivos painéis.
 - **Submissão de Avaliação:** Formulário detalhado para avaliar a instituição e o curso, com sistema de votação por carinhas interativas e campo para observações.
-- **Dashboard do Usuário:** Visualização do histórico de avaliações submetidas, com contagem regressiva para a próxima avaliação disponível.
+ - **Painel do Usuário:** Visualização do histórico de avaliações submetidas, com contagem regressiva para a próxima avaliação disponível.
 - **Recuperação de Senha Aprimorada:** Fluxo seguro de redefinição de senha via código enviado por e-mail, com validação e regras de segurança para a nova senha.
 
 ### Para Administradores

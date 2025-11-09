@@ -3,10 +3,11 @@ import { RowDataPacket } from 'mysql2';
 
 export const getAllInstitutions = async (q?: string) => {
   let query = 'SELECT id, nome, latitude, longitude FROM Instituicoes WHERE is_active = TRUE';
-  const params = [];
+  const params: any[] = [];
   if (q) {
-    query += ' AND nome LIKE ?';
-    params.push(`%${q}%`);
+    const qNorm = q.trim().replace(/\s+/g, ' ').toLowerCase();
+    query += ' AND LOWER(nome) LIKE ?';
+    params.push(`%${qNorm}%`);
   }
   query += ' ORDER BY nome ASC';
   const [rows] = await pool.query<RowDataPacket[]>(query, params);
@@ -23,8 +24,9 @@ export const getCoursesByInstitution = async (institutionId?: number, q?: string
     params.push(institutionId);
   }
   if (q) {
-    whereClauses.push('nome LIKE ?');
-    params.push(`%${q}%`);
+    const qNorm = q.trim().replace(/\s+/g, ' ').toLowerCase();
+    whereClauses.push('LOWER(nome) LIKE ?');
+    params.push(`%${qNorm}%`);
   }
 
   if (whereClauses.length > 0) {
@@ -37,13 +39,15 @@ export const getCoursesByInstitution = async (institutionId?: number, q?: string
 };
 
 export const updateInstitution = async (institutionId: number, nome: string) => {
-  await pool.query('UPDATE Instituicoes SET nome = ? WHERE id = ?', [nome, institutionId]);
+  const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
+  await pool.query('UPDATE Instituicoes SET nome = ? WHERE id = ?', [nomeNorm, institutionId]);
   const [rows] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Instituicoes WHERE id = ?', [institutionId]);
   return rows[0];
 };
 
 export const updateCourse = async (courseId: number, nome: string) => {
-  await pool.query('UPDATE Cursos SET nome = ? WHERE id = ?', [nome, courseId]);
+  const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
+  await pool.query('UPDATE Cursos SET nome = ? WHERE id = ?', [nomeNorm, courseId]);
   const [rows] = await pool.query<RowDataPacket[]>('SELECT id, nome FROM Cursos WHERE id = ?', [courseId]);
   return rows[0];
 };

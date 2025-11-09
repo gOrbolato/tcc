@@ -34,6 +34,8 @@ app.use('/api/admin', adminRoutes_1.default);
 app.use('/api', consentRoutes_1.default);
 app.use('/api/admin', adminUserRoutes_1.default);
 app.use('/api/entities', institutionCourseRoutes_1.default);
+// Backwards-compatible mount so frontend code that calls '/api/institutions' still works
+app.use('/api', institutionCourseRoutes_1.default);
 app.use('/api/notifications', notificationRoutes_1.default);
 app.use('/api/admin/desbloqueios', desbloqueioRoutes_1.default);
 app.use('/api', analysisRoutes_1.default); // <-- ADICIONADO

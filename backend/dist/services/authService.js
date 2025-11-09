@@ -17,6 +17,7 @@ const database_1 = __importDefault(require("../config/database"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
+const autoEntityService_1 = require("./autoEntityService");
 const JWT_SECRET = process.env.JWT_SECRET || 'seu_segredo_jwt_aqui';
 // Função auxiliar para gerar um código de 3 letras e 4 números
 const generateRandomCode = () => {
@@ -59,18 +60,83 @@ const register = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     // Resolver instituição e curso: se institutionText/courseText fornecidos, tentar encontrar por nome ou criar
     let finalInstituicaoId = instituicao_id;
     let finalCursoId = curso_id;
-    // If institutionText/courseText provided, try to find matching records by name but DO NOT create new ones.
-    if (!finalInstituicaoId && institutionText) {
-        const [instRows] = yield database_1.default.query('SELECT id FROM Instituicoes WHERE nome = ?', [institutionText]);
-        if (instRows.length > 0)
-            finalInstituicaoId = instRows[0].id;
-        // else: leave as undefined/null (do not create automatically)
+    // Normalização simples: trim, collapse múltiplos espaços
+    const normalize = (s) => {
+        if (!s && s !== '')
+            return s;
+        return String(s).trim().replace(/\s+/g, ' ');
+    };
+    const institutionTextNorm = normalize(institutionText);
+    const courseTextNorm = normalize(courseText);
+    // Logic for Institution
+    if (!finalInstituicaoId && institutionTextNorm) {
+        let institutionId = null;
+        // 1. Try to find the institution
+        const [instRows] = yield database_1.default.query("SELECT id FROM Instituicoes WHERE LOWER(nome) = ?", [institutionTextNorm.toLowerCase()]);
+        if (instRows.length > 0) {
+            institutionId = instRows[0].id;
+        }
+        else {
+            // 2. If not found, create it
+            try {
+                const [insertInst] = yield database_1.default.query('INSERT INTO Instituicoes (nome, is_active) VALUES (?, TRUE)', [institutionTextNorm]);
+                if (insertInst.insertId) {
+                    institutionId = insertInst.insertId;
+                    // Optional: log the auto-creation
+                    yield (0, autoEntityService_1.logAutoCreatedEntity)('instituicao', institutionTextNorm, email, { createdId: institutionId }).catch(e => console.error("Logging failed", e));
+                }
+            }
+            catch (error) {
+                // This can happen in a race condition where another request created the institution between our SELECT and INSERT.
+                // In that case, we just re-fetch it.
+                if (error.code === 'ER_DUP_ENTRY') {
+                    const [refetchRows] = yield database_1.default.query("SELECT id FROM Instituicoes WHERE LOWER(nome) = ?", [institutionTextNorm.toLowerCase()]);
+                    if (refetchRows.length > 0) {
+                        institutionId = refetchRows[0].id;
+                    }
+                }
+                else {
+                    // For other errors, we might want to throw
+                    throw error;
+                }
+            }
+        }
+        finalInstituicaoId = institutionId;
     }
-    if (!finalCursoId && courseText && finalInstituicaoId) {
-        const [cursoRows] = yield database_1.default.query('SELECT id FROM Cursos WHERE nome = ? AND instituicao_id = ?', [courseText, finalInstituicaoId]);
-        if (cursoRows.length > 0)
-            finalCursoId = cursoRows[0].id;
-        // else: leave as undefined/null (do not create automatically)
+    // Logic for Course
+    if (!finalCursoId && courseTextNorm && finalInstituicaoId) {
+        let courseId = null;
+        // 1. Try to find the course
+        const [cursoRows] = yield database_1.default.query("SELECT id FROM Cursos WHERE LOWER(nome) = ? AND instituicao_id = ?", [courseTextNorm.toLowerCase(), finalInstituicaoId]);
+        if (cursoRows.length > 0) {
+            courseId = cursoRows[0].id;
+        }
+        else {
+            // 2. If not found, create it
+            try {
+                const [insertCourse] = yield database_1.default.query('INSERT INTO Cursos (nome, instituicao_id, is_active) VALUES (?, ?, TRUE)', [courseTextNorm, finalInstituicaoId]);
+                if (insertCourse.insertId) {
+                    courseId = insertCourse.insertId;
+                    // Optional: log the auto-creation
+                    yield (0, autoEntityService_1.logAutoCreatedEntity)('curso', courseTextNorm, email, { createdId: courseId, instituicaoId: finalInstituicaoId }).catch(e => console.error("Logging failed", e));
+                }
+            }
+            catch (error) {
+                // This can happen in a race condition where another request created the course between our SELECT and INSERT.
+                // In that case, we just re-fetch it.
+                if (error.code === 'ER_DUP_ENTRY') {
+                    const [refetchRows] = yield database_1.default.query("SELECT id FROM Cursos WHERE LOWER(nome) = ? AND instituicao_id = ?", [courseTextNorm.toLowerCase(), finalInstituicaoId]);
+                    if (refetchRows.length > 0) {
+                        courseId = refetchRows[0].id;
+                    }
+                }
+                else {
+                    // For other errors, we might want to throw
+                    throw error;
+                }
+            }
+        }
+        finalCursoId = courseId;
     }
     // Gerar anonymized_id
     const anonymizedId = crypto_1.default.randomBytes(16).toString('hex');

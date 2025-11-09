@@ -36,14 +36,14 @@ export const submitEvaluation = async (data: EvaluationData) => {
     '102': 'equipamentos',
     '103': 'biblioteca',
     '104': 'suporte_mercado',
-    '105': 'localizacao',
+    '105': 'localização',
     '106': 'acessibilidade',
-    '107': 'direcao',
-    '108': 'coordenacao',
-    '109': 'didatica',
-    '110': 'dinamica_professores',
+    '107': 'direção',
+    '108': 'coordenação',
+    '109': 'didática',
+    '110': 'dinâmica_professores',
     '111': 'disponibilidade_professores',
-    '112': 'conteudo',
+    '112': 'conteúdo',
   };
 
   // Convert incoming answers like nota_<id> and comentario_<id> into nota_<category> / comentario_<category>
@@ -95,30 +95,13 @@ export const submitEvaluation = async (data: EvaluationData) => {
   const placeholders = columns.map(() => '?').join(', ');
   const values = [userId, instituicao_id, curso_id, media_final, ...answerValues];
 
-  // Prepare final columns/placeholders/values (mutable copies)
-  const fullColumns = [...columns];
-  const fullValues = [...values];
-  let fullPlaceholders = placeholders;
-
-  const respostaRaw = answers && Object.keys(answers).length > 0 ? answers : null;
-  if (respostaRaw) {
-    fullColumns.push('resposta_raw');
-    fullPlaceholders = fullPlaceholders + ', ?';
-    fullValues.push(JSON.stringify(respostaRaw));
-  }
-  if ((data as any).template_id) {
-    fullColumns.push('template_id');
-    fullPlaceholders = fullPlaceholders + ', ?';
-    fullValues.push((data as any).template_id);
-  }
-
-  const query = `INSERT INTO Avaliacoes (${fullColumns.join(', ')}) VALUES (${fullPlaceholders});`;
+  const query = `INSERT INTO Avaliacoes (${columns.join(', ')}) VALUES (${placeholders});`;
 
   // Log para depuração
-  console.log('--- DEBUG: Valores sendo inseridos na tabela Avaliacoes: ---', fullValues);
+  console.log('--- DEBUG: Valores sendo inseridos na tabela Avaliacoes: ---', values);
   console.log('--- DEBUG: SQL a executar ---', query);
 
-  const [result] = await pool.query<OkPacket>(query, fullValues);
+  const [result] = await pool.query<OkPacket>(query, values);
   const insertId = result.insertId;
 
   // Bulk insert into AvaliacaoRespostas: one row per nota/comment pair

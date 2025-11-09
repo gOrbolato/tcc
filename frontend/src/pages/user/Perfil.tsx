@@ -98,6 +98,14 @@ const Perfil: React.FC = () => {
       try {
         const response = await api.get('/institutions');
         setInstitutions(response.data);
+        // If backend already provided institution name in user payload, set it immediately
+        if (user && (user as any).instituicao_nome) {
+          const instFromUser = (user as any).instituicao_nome;
+          // Try to find matching institution by name, otherwise create a temporary object so Autocomplete shows it
+          const found = response.data.find((i: any) => i.nome === instFromUser);
+          if (found) setSelectedInstitution(found);
+          else setSelectedInstitution({ id: (user as any).instituicao_id || null, nome: instFromUser });
+        }
       } catch (error) {
         showNotification('Erro ao carregar instituições', 'error');
       }
@@ -111,6 +119,13 @@ const Perfil: React.FC = () => {
         try {
           const response = await api.get(`/courses?institutionId=${selectedInstitution.id}`);
           setCourses(response.data);
+          // If backend provided course name, set selectedCourse immediately as well
+          if (user && (user as any).curso_nome) {
+            const courseFromUser = (user as any).curso_nome;
+            const foundCourse = response.data.find((c: any) => c.nome === courseFromUser);
+            if (foundCourse) setSelectedCourse(foundCourse);
+            else setSelectedCourse({ id: (user as any).curso_id || null, nome: courseFromUser });
+          }
         } catch (error) {
           showNotification('Erro ao carregar cursos', 'error');
         }
@@ -121,23 +136,7 @@ const Perfil: React.FC = () => {
     }
   }, [selectedInstitution, showNotification]);
 
-  useEffect(() => {
-    if (user && institutions.length > 0 && (user as any).instituicao_id) {
-      const userInstitution = institutions.find(inst => Number(inst.id) === Number((user as any).instituicao_id));
-      if (userInstitution) {
-        setSelectedInstitution(userInstitution);
-      }
-    }
-  }, [user, institutions]);
-
-  useEffect(() => {
-    if (user && courses.length > 0 && (user as any).curso_id) {
-      const userCourse = courses.find(course => Number(course.id) === Number((user as any).curso_id));
-      if (userCourse) {
-        setSelectedCourse(userCourse);
-      }
-    }
-  }, [user, courses]);
+  // These effects are now handled when institutions and courses are fetched, prioritizing backend-provided names.
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

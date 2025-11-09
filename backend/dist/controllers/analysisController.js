@@ -42,15 +42,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getInstitutionAnalysis = void 0;
+exports.downloadReportPdf = exports.getInstitutionAnalysis = void 0;
 const analysisService = __importStar(require("../services/analysisService"));
 const getInstitutionAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
+        const { currentStart, currentEnd, previousStart, previousEnd } = req.query;
         if (!id) {
             return res.status(400).json({ message: 'O ID da instituição é obrigatório.' });
         }
-        const analysisResult = yield analysisService.generateAnalysisForInstitution(Number(id));
+        const options = {
+            currentStart: currentStart,
+            currentEnd: currentEnd,
+            previousStart: previousStart,
+            previousEnd: previousEnd,
+        };
+        const analysisResult = yield analysisService.generateAnalysisForInstitution(Number(id), options);
         res.status(200).json(analysisResult);
     }
     catch (error) {
@@ -59,3 +66,27 @@ const getInstitutionAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, f
     }
 });
 exports.getInstitutionAnalysis = getInstitutionAnalysis;
+const downloadReportPdf = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const { currentStart, currentEnd, previousStart, previousEnd } = req.query;
+        if (!id) {
+            return res.status(400).json({ message: 'O ID da instituição é obrigatório.' });
+        }
+        const options = {
+            currentStart: currentStart,
+            currentEnd: currentEnd,
+            previousStart: previousStart,
+            previousEnd: previousEnd,
+        };
+        const pdfBuffer = yield analysisService.generatePdfReport(Number(id), options);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="relatorio_avaliacao.pdf"');
+        res.send(pdfBuffer);
+    }
+    catch (error) {
+        console.error('Erro ao gerar PDF no controller:', error);
+        res.status(500).json({ message: 'Erro ao gerar o PDF do relatório.', error: error.message });
+    }
+});
+exports.downloadReportPdf = downloadReportPdf;

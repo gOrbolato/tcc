@@ -1,44 +1,30 @@
--- Cria (se necessário) e seleciona o banco de dados correto
-CREATE DATABASE IF NOT EXISTS `tcc` CHARACTER SET utf8 COLLATE utf8_general_ci;
+-- Criação segura e não-destrutiva do banco de dados para desenvolvimento
+-- Usa utf8mb4 para suporte completo a Unicode. Este script cria as tabelas somente se não existirem.
+-- IMPORTANTE: Este arquivo NÃO REMOVE (DROP) tabelas. Se precisar resetar o banco, faça backup antes
+-- e execute um script destrutivo explicitamente.
+
+CREATE DATABASE IF NOT EXISTS `tcc` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `tcc`;
 
--- Desativa temporariamente a checagem de chaves estrangeiras para permitir apagar as tabelas
-SET FOREIGN_KEY_CHECKS=0;
-
--- Apaga as tabelas antigas, se elas existirem
-DROP TABLE IF EXISTS Notificacoes;
-DROP TABLE IF EXISTS Admins;
-DROP TABLE IF EXISTS Avaliacoes;
-DROP TABLE IF EXISTS Usuarios;
-DROP TABLE IF EXISTS Cursos;
-DROP TABLE IF EXISTS Instituicoes;
-DROP TABLE IF EXISTS Desbloqueios;
-DROP TABLE IF EXISTS AvaliacaoRespostas;
-DROP TABLE IF EXISTS AnalyticsResults;
-DROP TABLE IF EXISTS Consents;
-
--- Reativa a checagem de chaves estrangeiras
-SET FOREIGN_KEY_CHECKS=1;
-
--- Recria a tabela Instituicoes
+-- Instituicoes
 CREATE TABLE IF NOT EXISTS Instituicoes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL UNIQUE,
-    latitude DECIMAL(10, 8),
-    longitude DECIMAL(11, 8),
+    latitude DECIMAL(10,8),
+    longitude DECIMAL(11,8),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Recria a tabela Cursos
+-- Cursos
 CREATE TABLE IF NOT EXISTS Cursos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     instituicao_id INT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (instituicao_id) REFERENCES Instituicoes(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Recria a tabela Usuarios
+-- Usuarios
 CREATE TABLE IF NOT EXISTS Usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
@@ -62,15 +48,15 @@ CREATE TABLE IF NOT EXISTS Usuarios (
     FOREIGN KEY (instituicao_id) REFERENCES Instituicoes(id),
     FOREIGN KEY (curso_id) REFERENCES Cursos(id),
     UNIQUE (ra, instituicao_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Recria a tabela Avaliacoes
+-- Avaliacoes
 CREATE TABLE IF NOT EXISTS Avaliacoes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
     instituicao_id INT,
     curso_id INT,
-    media_final DECIMAL(3, 2) NOT NULL,
+    media_final DECIMAL(3,2) NOT NULL,
     nota_infraestrutura INT,
     nota_coordenacao INT,
     nota_direcao INT,
@@ -99,28 +85,28 @@ CREATE TABLE IF NOT EXISTS Avaliacoes (
     FOREIGN KEY (usuario_id) REFERENCES Usuarios(id) ON DELETE CASCADE,
     FOREIGN KEY (instituicao_id) REFERENCES Instituicoes(id) ON DELETE CASCADE,
     FOREIGN KEY (curso_id) REFERENCES Cursos(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Recria a tabela Admins
+-- Admins
 CREATE TABLE IF NOT EXISTS Admins (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Recria a tabela Notificacoes
+-- Notificacoes
 CREATE TABLE IF NOT EXISTS Notificacoes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  usuario_id INT NOT NULL,
-  mensagem VARCHAR(255) NOT NULL,
-  lida BOOLEAN NOT NULL DEFAULT FALSE,
-  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (usuario_id) REFERENCES Usuarios(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    mensagem VARCHAR(255) NOT NULL,
+    lida BOOLEAN NOT NULL DEFAULT FALSE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES Usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela para pedidos de desbloqueio
+-- Desbloqueios
 CREATE TABLE IF NOT EXISTS Desbloqueios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
@@ -134,9 +120,9 @@ CREATE TABLE IF NOT EXISTS Desbloqueios (
     FOREIGN KEY (usuario_id) REFERENCES Usuarios(id) ON DELETE CASCADE,
     FOREIGN KEY (admin_id) REFERENCES Admins(id),
     INDEX idx_verification_code (verification_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela para respostas de avaliação normalizadas
+-- AvaliacaoRespostas
 CREATE TABLE IF NOT EXISTS AvaliacaoRespostas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     avaliacao_id INT NOT NULL,
@@ -149,9 +135,9 @@ CREATE TABLE IF NOT EXISTS AvaliacaoRespostas (
     INDEX (question_id),
     INDEX (question_key),
     FULLTEXT idx_respostas_comentario (comentario)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela para resultados de análise
+-- AnalyticsResults
 CREATE TABLE IF NOT EXISTS AnalyticsResults (
     id INT AUTO_INCREMENT PRIMARY KEY,
     avaliacao_id INT NULL,
@@ -163,9 +149,9 @@ CREATE TABLE IF NOT EXISTS AnalyticsResults (
     INDEX (tipo),
     INDEX (instituicao_id),
     INDEX (curso_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabela para consentimentos
+-- Consents
 CREATE TABLE IF NOT EXISTS Consents (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NULL,
@@ -179,4 +165,16 @@ CREATE TABLE IF NOT EXISTS Consents (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX (user_id),
     INDEX (`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Auditoria de criações automáticas (quando usuário registra com texto livre)
+CREATE TABLE IF NOT EXISTS AutoCreatedEntities (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    entity_type VARCHAR(32) NOT NULL,
+    entity_name VARCHAR(255) NOT NULL,
+    triggered_by_email VARCHAR(255) NULL,
+    triggered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    metadata JSON NULL,
+    INDEX (entity_type),
+    INDEX (triggered_by_email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
