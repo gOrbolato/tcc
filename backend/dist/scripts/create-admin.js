@@ -25,10 +25,10 @@ npx ts-node src/scripts/create-admin.ts
 */
 // --- CONFIGURAÇÕES ---
 const ADMIN_EMAIL = 'orbolato.guilherme@gmail.com'; // adic
-const ADMIN_NOME = 'Guilherme Admin';
+const ADMIN_NOME = 'Guilherme';
 const ADMIN_SENHA_PLANA = 'Eumesmo1993'; // A senha que você vai usar para logar
 //const ADMIN_EMAIL = 'fnakano03@gmail.com'; // adicione o e-mail desejado aqui
-//const ADMIN_NOME = 'Felipe Admin';
+//const ADMIN_NOME = 'Felipe';
 //const ADMIN_SENHA_PLANA = '@ForWork65'; // A senha que você vai usar para logar
 // ---------------------
 const createAdmin = () => __awaiter(void 0, void 0, void 0, function* () {

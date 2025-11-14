@@ -286,6 +286,19 @@ const resetPassword = (email, newPassword) => __awaiter(void 0, void 0, void 0, 
     if (!user.reset_token || user.reset_token_expires_at < new Date()) {
         throw new Error('Token de redefinição de senha inválido ou expirado.');
     }
+    // Password strength validation
+    if (newPassword.length < 8) {
+        throw new Error('A senha deve ter pelo menos 8 caracteres.');
+    }
+    if (!/[0-9]/.test(newPassword)) {
+        throw new Error('A senha deve conter pelo menos 1 número.');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+        throw new Error('A senha deve conter pelo menos 1 caractere especial.');
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+        throw new Error('A senha deve conter pelo menos 1 letra maiúscula.');
+    }
     const hashedPassword = yield bcrypt_1.default.hash(newPassword, 10);
     yield database_1.default.query('UPDATE Usuarios SET senha = ?, reset_token = NULL, reset_token_expires_at = NULL WHERE id = ?', [hashedPassword, user.id]);
     return true;

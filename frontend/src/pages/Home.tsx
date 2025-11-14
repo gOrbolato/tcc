@@ -5,11 +5,13 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import SearchIcon from '@mui/icons-material/Search';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import carousel1 from '../assets/images/imagem-carrossel1.png';
+import carousel2 from '../assets/images/imagem-carrossel2.png';
 
 import GeolocationConsentModal from '../components/GeolocationConsentModal';
 import guilhermeOrbolatoImg from '../assets/images/guilhermeOrbolato.jpg';
-import educationHero from '../assets/images/imagem-fundo.png';
+import felipeNakanoImg from '../assets/images/felipeNakano.jpeg';
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 40 },
@@ -151,8 +153,9 @@ const Home: React.FC = () => {
         <Box sx={{ py: { xs: 6, md: 10 } }}>
           <Container maxWidth="lg">
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 6, alignItems: 'center' }}>
-              <motion.div whileHover={{ scale: 1.03 }} style={{ borderRadius: '12px', overflow: 'hidden' }}>
-                <img src="/src/assets/images/imagem-sobre-plataforma.png" alt="sobre" style={{ width: '100%', display: 'block' }} onError={(e) => { const t = e.currentTarget as HTMLImageElement; if (t.src.endsWith('imagem-sobre-plataforma.png')) t.src = educationHero; }} />
+              {/* Carousel: cycles between images with controls and autoplay */}
+              <motion.div whileHover={{ scale: 1.03 }} style={{ borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+                <Carousel />
               </motion.div>
               <Box>
                 <Typography variant="h4" component="h3" sx={{ mb: 2, fontWeight: 700 }}>Sobre a Plataforma</Typography>
@@ -189,7 +192,7 @@ const Home: React.FC = () => {
             </motion.div>
             <motion.div whileHover={{ y: -8 }}>
               <Paper elevation={3} sx={{ p: 4, textAlign: 'center', borderRadius: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Avatar sx={{ width: 96, height: 96, mx: 'auto', mb: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>FN</Avatar>
+                <Avatar src={felipeNakanoImg} sx={{ width: 96, height: 96, mx: 'auto', mb: 2, border: '3px solid', borderColor: 'primary.main' }} />
                 <Typography variant="h6">Felipe Nakano</Typography>
                 <Typography variant="body2" color="primary" fontWeight="bold">Desenvolvedor Full Stack</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1, flexGrow: 1 }}>
@@ -224,3 +227,32 @@ const Home: React.FC = () => {
 };
 
 export default Home;
+
+// Simple inline carousel component used only on Home
+function Carousel() {
+  const images = [carousel1, carousel2];
+  const durations = [5000, 5000];
+  const [index, setIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    const id = window.setTimeout(() => setIndex((i) => (i + 1) % images.length), durations[index] || 5000);
+    return () => window.clearTimeout(id);
+  }, [index]);
+
+  return (
+    <Box sx={{ position: 'relative', width: '100%', height: 320 }}>
+      <AnimatePresence initial={false} mode="wait">
+        <motion.img
+          key={index}
+          src={images[index]}
+          alt={`slide-${index}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
+      </AnimatePresence>
+    </Box>
+  );
+}
