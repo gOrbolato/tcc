@@ -31,6 +31,8 @@ const Registro: React.FC = () => {
   const [semestre, setSemestre] = useState('');
   const [periodo, setPeriodo] = useState('');
   const [previsaoTermino, setPrevisaoTermino] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [estado, setEstado] = useState('');
 
   // States de loading e dados dos dropdowns
   const [loading, setLoading] = useState(false);
@@ -56,6 +58,8 @@ const Registro: React.FC = () => {
         cpf: cpf || undefined,
   institutionText: instituicaoTexto || undefined,
   courseText: cursoTexto || undefined,
+          cidade: cidade || undefined,
+          estado: estado || undefined,
         semestre: semestre ? Number(semestre) : undefined,
         periodo: periodo || undefined,
         previsaoTermino: previsaoTermino || undefined,
@@ -151,6 +155,64 @@ const Registro: React.FC = () => {
               onChange={(e) => setCursoTexto(e.target.value)}
               disabled={loading}
             />
+          </Box>
+
+          {/* Cidade (texto) */}
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="cidade"
+              label="Cidade"
+              name="cidade"
+              placeholder="Digite sua cidade"
+              value={cidade}
+              onChange={(e) => setCidade(e.target.value)}
+              disabled={loading}
+            />
+          </Box>
+
+          {/* Estado (select) */}
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <FormControl fullWidth margin="normal" disabled={loading}>
+              <InputLabel id="estado-label">Estado</InputLabel>
+              <Select
+                labelId="estado-label"
+                id="estado"
+                value={estado}
+                label="Estado"
+                onChange={(e) => setEstado(e.target.value)}
+              >
+                <MenuItem value="">-- Selecione --</MenuItem>
+                <MenuItem value="AC">Acre (AC)</MenuItem>
+                <MenuItem value="AL">Alagoas (AL)</MenuItem>
+                <MenuItem value="AP">Amapá (AP)</MenuItem>
+                <MenuItem value="AM">Amazonas (AM)</MenuItem>
+                <MenuItem value="BA">Bahia (BA)</MenuItem>
+                <MenuItem value="CE">Ceará (CE)</MenuItem>
+                <MenuItem value="DF">Distrito Federal (DF)</MenuItem>
+                <MenuItem value="ES">Espírito Santo (ES)</MenuItem>
+                <MenuItem value="GO">Goiás (GO)</MenuItem>
+                <MenuItem value="MA">Maranhão (MA)</MenuItem>
+                <MenuItem value="MT">Mato Grosso (MT)</MenuItem>
+                <MenuItem value="MS">Mato Grosso do Sul (MS)</MenuItem>
+                <MenuItem value="MG">Minas Gerais (MG)</MenuItem>
+                <MenuItem value="PA">Pará (PA)</MenuItem>
+                <MenuItem value="PB">Paraíba (PB)</MenuItem>
+                <MenuItem value="PR">Paraná (PR)</MenuItem>
+                <MenuItem value="PE">Pernambuco (PE)</MenuItem>
+                <MenuItem value="PI">Piauí (PI)</MenuItem>
+                <MenuItem value="RJ">Rio de Janeiro (RJ)</MenuItem>
+                <MenuItem value="RN">Rio Grande do Norte (RN)</MenuItem>
+                <MenuItem value="RS">Rio Grande do Sul (RS)</MenuItem>
+                <MenuItem value="RO">Rondônia (RO)</MenuItem>
+                <MenuItem value="RR">Roraima (RR)</MenuItem>
+                <MenuItem value="SC">Santa Catarina (SC)</MenuItem>
+                <MenuItem value="SP">São Paulo (SP)</MenuItem>
+                <MenuItem value="SE">Sergipe (SE)</MenuItem>
+                <MenuItem value="TO">Tocantins (TO)</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
 
           {/* Periodo & Semestre on same row */}
