@@ -12,8 +12,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rejectDesbloqueio = exports.approveDesbloqueio = exports.getPendingDesbloqueios = void 0;
+exports.getPendingDesbloqueioCount = exports.rejectDesbloqueio = exports.approveDesbloqueio = exports.getPendingDesbloqueios = void 0;
 const database_1 = __importDefault(require("../config/database"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
 // Função auxiliar para gerar um código de 3 letras e 4 números
 const generateRandomCode = () => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -34,14 +35,20 @@ const sendEmail = (to, subject, text) => __awaiter(void 0, void 0, void 0, funct
     console.log('Corpo: ' + text);
     console.log('----------------------------------');
 });
-const getPendingDesbloqueios = () => __awaiter(void 0, void 0, void 0, function* () {
-    const [rows] = yield database_1.default.query(`
-    SELECT d.id, d.motivo, d.criado_em, u.nome, u.email
+const getPendingDesbloqueios = (date) => __awaiter(void 0, void 0, void 0, function* () {
+    let query = `
+    SELECT d.id, d.motivo, d.criado_em, u.nome, u.email, u.anonymized_id
     FROM Desbloqueios d
     JOIN Usuarios u ON d.usuario_id = u.id
     WHERE d.status = 'PENDING'
-    ORDER BY d.criado_em ASC
-  `);
+  `;
+    const params = [];
+    if (date) {
+        query += ' AND DATE(d.criado_em) = ?';
+        params.push(date);
+    }
+    query += ' ORDER BY d.criado_em ASC';
+    const [rows] = yield database_1.default.query(query, params);
     return rows;
 });
 exports.getPendingDesbloqueios = getPendingDesbloqueios;
@@ -56,8 +63,9 @@ const approveDesbloqueio = (desbloqueioId) => __awaiter(void 0, void 0, void 0, 
         throw new Error('Esta solicitação já foi processada.');
     }
     const verificationCode = generateRandomCode();
+    const hashedCode = yield bcrypt_1.default.hash(verificationCode, 10);
     const codeExpiresAt = new Date(Date.now() + 3600000); // Expira em 1 hora
-    yield database_1.default.query('UPDATE Desbloqueios SET status = \'APPROVED\', verification_code = ?, code_expires_at = ? WHERE id = ?', [verificationCode, codeExpiresAt, desbloqueioId]);
+    yield database_1.default.query('UPDATE Desbloqueios SET status = \'APPROVED\', verification_code = ?, code_expires_at = ? WHERE id = ?', [hashedCode, codeExpiresAt, desbloqueioId]);
     // Enviar e-mail com o código para o usuário
     yield sendEmail(userEmail, 'Seu Pedido de Desbloqueio foi Aprovado', `Olá,\n\nSua solicitação de desbloqueio de conta foi aprovada.\nUse o seguinte código para reativar seu acesso: ${verificationCode}\nEste código expira em 1 hora.\n`);
     // Não alteramos mais a tabela Usuarios aqui. Isso será feito após a validação do código.
@@ -67,3 +75,8 @@ const rejectDesbloqueio = (desbloqueioId) => __awaiter(void 0, void 0, void 0, f
     yield database_1.default.query('UPDATE Desbloqueios SET status = \'REJECTED\' WHERE id = ?', [desbloqueioId]);
 });
 exports.rejectDesbloqueio = rejectDesbloqueio;
+const getPendingDesbloqueioCount = () => __awaiter(void 0, void 0, void 0, function* () {
+    const [rows] = yield database_1.default.query("SELECT COUNT(*) as count FROM Desbloqueios WHERE status = 'PENDING'");
+    return rows[0].count;
+});
+exports.getPendingDesbloqueioCount = getPendingDesbloqueioCount;

@@ -1,12 +1,22 @@
 import { Request, Response } from 'express';
 import * as desbloqueioService from '../services/desbloqueioService';
 
-export const getPendingDesbloqueios = async (_req: Request, res: Response) => {
+export const getPendingDesbloqueios = async (req: Request, res: Response) => {
   try {
-    const requests = await desbloqueioService.getPendingDesbloqueios();
+    const { date } = req.query;
+    const requests = await desbloqueioService.getPendingDesbloqueios(date as string | undefined);
     res.status(200).json(requests);
   } catch (error: any) {
     res.status(500).json({ message: 'Erro ao buscar solicitações de desbloqueio.', error: error.message });
+  }
+};
+
+export const getPendingDesbloqueioCount = async (_req: Request, res: Response) => {
+  try {
+    const count = await desbloqueioService.getPendingDesbloqueioCount();
+    res.status(200).json({ count });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erro ao buscar contagem de solicitações.', error: error.message });
   }
 };
 

@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 
-// 1. Importar componentes de Tabela
 import {
   Container,
   Typography,
@@ -16,159 +15,238 @@ import {
   Button,
   CircularProgress,
   Box,
+  Autocomplete,
+  TextField,
+  Toolbar,
+  alpha,
+  Chip,
+  Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  IconButton, // Adicionado IconButton
 } from '@mui/material';
 
-// 2. Importar Ícones para ações
-// Edit/Delete icons removed per UX: no add/edit from admin UI
+import ReportFilters, { type SearchOptions } from './reports/components/ReportFilters';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ClearIcon from '@mui/icons-material/Clear'; // Adicionado ClearIcon
 
-
-// 3. Definir o tipo de dado do Usuário
 import type { User } from '../../types/user';
 
 const AdminUserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const { showNotification } = useNotification();
 
-  const fetchUsers = async (filters?: { institutionId?: number | undefined; courseId?: number | undefined; anonymizedId?: string | undefined; }) => {
+  const fetchUsers = useCallback(async (filters: SearchOptions) => {
     setLoading(true);
+    setHasSearched(true);
     try {
-      const params: any = {};
-      if (filters?.institutionId) params.institutionId = filters.institutionId;
-      if (filters?.courseId) params.courseId = filters.courseId;
-      if (filters?.anonymizedId) params.anonymizedId = filters.anonymizedId;
-      const response = await api.get('/admin/users', { params });
+      const response = await api.get('/admin/users', { params: filters });
       setUsers(response.data || []);
     } catch (error) {
       showNotification('Erro ao carregar usuários', 'error');
     } finally {
       setLoading(false);
     }
+  }, [showNotification]);
+
+  const handleSearch = (options: SearchOptions) => {
+    if (!options.institutionId && !options.courseId) {
+      showNotification('Selecione ao menos uma instituição ou curso para buscar.', 'info');
+      return;
+    }
+    fetchUsers(options);
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const handleClear = () => {
+    setUsers([]);
+    setHasSearched(false);
+  };
 
-  // --- Desbloqueios (pedidos de desbloqueio) ---
   const [desbloqueios, setDesbloqueios] = useState<any[]>([]);
-  const [loadingDesbloqueios, setLoadingDesbloqueios] = useState(true);
+  const [loadingDesbloqueios, setLoadingDesbloqueios] = useState(false);
+  const [dateFilter, setDateFilter] = useState('');
+  const [pendingCount, setPendingCount] = useState(0);
 
-  const fetchDesbloqueios = async () => {
+  const fetchDesbloqueios = useCallback(async (date: string) => {
+    if (!date) {
+      setDesbloqueios([]);
+      return;
+    }
     setLoadingDesbloqueios(true);
     try {
-      const res = await api.get('/admin/desbloqueios');
+      const res = await api.get('/admin/desbloqueios', { params: { date } });
       setDesbloqueios(res.data || []);
     } catch (err) {
       showNotification('Erro ao carregar pedidos de desbloqueio', 'error');
     } finally {
       setLoadingDesbloqueios(false);
     }
-  };
+  }, [showNotification]);
 
-  useEffect(() => {
-    fetchDesbloqueios();
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const res = await api.get('/admin/desbloqueios/count');
+      setPendingCount(res.data.count);
+    } catch (err) {
+      console.error('Erro ao buscar contagem de pendências.');
+    }
   }, []);
 
-  // Admins should not edit users here. Activation/removal is handled only via desbloqueio requests.
+  useEffect(() => {
+    fetchPendingCount();
+  }, [fetchPendingCount]);
 
-  if (loading) {
-    return (
-      <Container sx={{ textAlign: 'center', mt: 5 }}>
-        <CircularProgress />
-      </Container>
-    );
-  }
+  useEffect(() => {
+    fetchDesbloqueios(dateFilter);
+  }, [fetchDesbloqueios, dateFilter]);
+
+  const handleApprove = async (id: number) => {
+    try {
+      await api.post(`/admin/desbloqueios/${id}/approve`);
+      showNotification('Aprovado', 'success');
+      fetchDesbloqueios(dateFilter);
+      fetchPendingCount();
+    } catch (err) {
+      showNotification('Erro ao aprovar', 'error');
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    try {
+      await api.post(`/admin/desbloqueios/${id}/reject`);
+      showNotification('Rejeitado', 'info');
+      fetchDesbloqueios(dateFilter);
+      fetchPendingCount();
+    } catch (err) {
+      showNotification('Erro ao rejeitar', 'error');
+    }
+  };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Editing users is disabled for admins in this UI. */}
       <Typography variant="h4" component="h1" gutterBottom>
         Gerenciamento de Usuários
       </Typography>
-      {/* Filtros removidos */}
+      
+      <Paper sx={{ p: 3, mb: 3 }} elevation={3}>
+        <Typography variant="h6" gutterBottom>Filtros de Usuário</Typography>
+        <ReportFilters onSearch={handleSearch} onClear={handleClear} loading={loading} />
+      </Paper>
 
-      <TableContainer component={Paper} elevation={3} sx={{ p: 2, '& th, & td': { px: 2 } }}>
-        <Table sx={{ minWidth: 650, tableLayout: 'auto' }} aria-label="tabela de usuários">
-          <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-            <TableRow>
-              <TableCell sx={{ pl: 3, width: 160 }}>ID Anônimo</TableCell>
-              <TableCell sx={{ px: 2 }}>Instituição</TableCell>
-              <TableCell sx={{ px: 2 }}>Curso</TableCell>
-              <TableCell sx={{ px: 2, width: 110, textAlign: 'center' }}>Ativo</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell sx={{ pl: 3, width: 320, fontFamily: 'monospace', wordBreak: 'break-all' }}>{user.anonymized_id || 'N/A'}</TableCell>
-                <TableCell sx={{ px: 2 }}>{user.instituicao_nome ?? '—'}</TableCell>
-                <TableCell sx={{ px: 2 }}>{user.curso_nome ?? '—'}</TableCell>
-                <TableCell sx={{ px: 2, width: 110, textAlign: 'center' }}>
-                  {user.isActive ? (
-                    <CheckCircleIcon color="success" />
-                  ) : (
-                    <CancelIcon color="error" />
-                  )}
-                </TableCell>
-                {/* No per-user actions here. Activation/removal only via Desbloqueio requests. */}
+      <Paper elevation={3} sx={{ width: '100%', mb: 2 }}>
+        <TableContainer>
+          <Table sx={{ minWidth: 650 }} aria-label="tabela de usuários">
+            <TableHead>
+              <TableRow>
+                <TableCell>ID Anônimo</TableCell>
+                <TableCell>Instituição</TableCell>
+                <TableCell>Curso</TableCell>
+                <TableCell align="center">Ativo</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" gutterBottom>Pedidos de Desbloqueio</Typography>
-        {loadingDesbloqueios ? (
-          <CircularProgress />
-        ) : (
-          <TableContainer component={Paper} sx={{ mt: 2, p: 1 }}>
-            <Table>
-              <TableHead>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow><TableCell colSpan={4} align="center"><CircularProgress /></TableCell></TableRow>
+              ) : users.length > 0 ? (
+                users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{user.anonymized_id || 'N/A'}</TableCell>
+                    <TableCell>{user.instituicao_nome ?? '—'}</TableCell>
+                    <TableCell>{user.curso_nome ?? '—'}</TableCell>
+                    <TableCell align="center">
+                      {user.isActive ? <CheckCircleIcon color="success" /> : <CancelIcon color="error" />}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
                 <TableRow>
-                  <TableCell>ID Anônimo</TableCell>
-                  <TableCell>Motivo</TableCell>
-                  <TableCell>Data</TableCell>
-                  <TableCell align="right">Ações</TableCell>
+                  <TableCell colSpan={4} align="center">
+                    {hasSearched ? 'Nenhum usuário encontrado para os filtros selecionados.' : 'Utilize os filtros para buscar usuários.'}
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {desbloqueios.map((d) => (
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      <Paper elevation={3} sx={{ width: '100%', mt: 4 }}>
+        <Toolbar
+          sx={{
+            pl: { sm: 2 },
+            pr: { xs: 1, sm: 1 },
+            bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.08),
+          }}
+        >
+          <Box sx={{ flex: '1 1 100%', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" component="div">
+              Pedidos de Desbloqueio
+            </Typography>
+            {pendingCount > 0 && (
+              <Chip label={pendingCount} color="error" size="small" />
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              label="Filtrar por Data"
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              size="small"
+            />
+            <IconButton onClick={() => setDateFilter('')} size="small">
+              <ClearIcon />
+            </IconButton>
+          </Box>
+        </Toolbar>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>ID Anônimo</TableCell>
+                <TableCell>Motivo</TableCell>
+                <TableCell>Data</TableCell>
+                <TableCell align="right">Ações</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loadingDesbloqueios ? (
+                <TableRow><TableCell colSpan={4} align="center"><CircularProgress /></TableCell></TableRow>
+              ) : desbloqueios.length > 0 ? (
+                desbloqueios.map((d) => (
                   <TableRow key={d.id}>
                     <TableCell sx={{ fontFamily: 'monospace' }}>{d.anonymized_id || `u:${d.usuario_id}`}</TableCell>
                     <TableCell>{d.motivo || '—'}</TableCell>
                     <TableCell>{new Date(d.criado_em).toLocaleString()}</TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                        <Button variant="contained" color="success" sx={{ mr: 1 }} onClick={async () => {
-                          try {
-                            await api.post(`/admin/desbloqueios/${d.id}/approve`);
-                            showNotification('Aprovado', 'success');
-                            setDesbloqueios(prev => prev.filter(item => item.id !== d.id)); // Remove o item aprovado
-                            fetchUsers();
-                          } catch (err) { showNotification('Erro ao aprovar', 'error'); }
-                        }}>Aprovar</Button>
-                        <Button variant="outlined" color="error" onClick={async () => {
-                          try {
-                            await api.post(`/admin/desbloqueios/${d.id}/reject`);
-                            showNotification('Rejeitado', 'info');
-                            setDesbloqueios(prev => prev.filter(item => item.id !== d.id)); // Remove o item rejeitado
-                          } catch (err) { showNotification('Erro ao rejeitar', 'error'); }
-                        }}>Rejeitar</Button>
+                        <Button variant="contained" color="success" size="small" onClick={() => handleApprove(d.id)}>
+                          Aprovar
+                        </Button>
+                        <Button variant="outlined" color="error" size="small" onClick={() => handleReject(d.id)}>
+                          Rejeitar
+                        </Button>
                       </Box>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Box>
-      {/* Removal confirmation via user row is disabled. Use "Pedidos de Desbloqueio" actions to approve/reject and update users. */}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    {dateFilter ? 'Nenhuma solicitação encontrada para esta data.' : 'Selecione uma data para ver as solicitações.'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
     </Container>
   );
 };

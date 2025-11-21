@@ -1,7 +1,10 @@
 import sys
 import json
+import os
 import pandas as pd
 from collections import Counter
+import google.generativeai as genai
+import numpy as np # Adicionado numpy para np.nan
 
 # Palavras-chave para análise de sentimento simples
 NEGATIVE_KEYWORDS = ['ruim', 'péssimo', 'lento', 'antigo', 'quebrado', 'difícil', 'desorganizado', 'insatisfeito', 'problema', 'falta', 'demora', 'ineficiente', 'inseguro', 'precisa melhorar']
@@ -23,6 +26,74 @@ CATEGORIES = {
     "disponibilidade_professores": "Disponibilidade e Suporte dos Professores",
 }
 
+def get_detailed_analysis(analysis_by_question, average_media_final, all_comments):
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return "Chave da API do Gemini não configurada. Defina a variável de ambiente GEMINI_API_KEY."
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-pro-latest')
+
+        # Formatar os dados de entrada para o prompt
+        input_data_str = f"Média geral final: {average_media_final:.2f}\n\n"
+        input_data_str += "Médias por categoria:\n"
+        for key, item in analysis_by_question.items():
+            input_data_str += f"- {item['name']}: {item['average_score']['value']:.2f}\n"
+        
+        input_data_str += "\nComentários dos Alunos (amostra):\n"
+        for category, comments in all_comments.items():
+            if comments:
+                input_data_str += f"- {category}:\n"
+                for comment in comments[:5]: # Limita a 5 comentários por categoria para não exceder o limite do prompt
+                    input_data_str += f"  - \"{comment}\"\n"
+
+
+        prompt_content = f"""
+        Assuma a posição de um Analista de Dados Educacionais Sênior. Com base nos dados quantitativos (médias) e qualitativos (comentários) a seguir, sua tarefa é gerar um relatório de análise aprofundado e um plano de ação.
+
+        **Dados Brutos:**
+        {input_data_str}
+
+        **Sua resposta DEVE começar EXATAMENTE com a seguinte estrutura e seguir o formato definido:**
+
+        ### Análise Detalhada
+
+        **1. A Hipótese do "Platô de Desempenho":**
+        Analise se os dados sugerem que a instituição atingiu um "platô de bom desempenho", onde a maioria dos resultados são "bons", mas não "excelentes". Discuta as implicações positivas (processos maduros) e negativas (falta de inovação, estagnação).
+
+        **2. O Risco da Média Agregada:**
+        Discuta os diferentes cenários que podem levar à média de {average_media_final:.2f}. O cenário é de consistência mediana (maioria das notas em torno de 4.0) ou de polarização oculta (notas excelentes sendo anuladas por notas problemáticas)? Use os dados das categorias para suportar sua análise.
+
+        **3. Análise por Categoria (Integrando Comentários):**
+        Com base nas médias de cada categoria e nos comentários fornecidos, identifique os pontos fortes e os pontos de atenção. Use os comentários para dar cor e contexto aos números. Por exemplo, se a nota de 'Localização e Acesso' é baixa, os comentários podem explicar se o problema é transporte, segurança ou estacionamento. Responda às perguntas: Onde somos excelentes? Onde precisamos melhorar urgentemente?
+
+        ### Recomendações Estratégicas
+
+        Com base na sua análise, proponha um plano de ação concreto.
+
+        **Fase 1: Diagnóstico Aprofundado (Ações Imediatas)**
+        1.  **Segmentação dos Dados:** Recomende a desagregação da média geral por outros eixos (unidade acadêmica, curso, docente, etc.).
+        2.  **Análise da Distribuição de Frequência:** Recomende a construção de um histograma para visualizar a distribuição das notas e confirmar o cenário de consistência ou polarização.
+        3.  **Análise Qualitativa:** Enfatize a importância de continuar a análise de sentimentos e tópicos dos comentários para dar contexto aos números, como você acabou de fazer.
+
+        **Fase 2: Ações Táticas (Médio Prazo)**
+        4.  **Criar o Programa "Faróis de Excelência":** Sugira a criação de um programa para identificar e disseminar as boas práticas das áreas com melhor desempenho.
+        5.  **Plano de Desenvolvimento Focado:** Sugira um plano de ação individualizado para as áreas com pior desempenho, usando os insights dos comentários.
+        6.  **Revisão de Metas e KPIs:** Recomende a redefinição de metas de sucesso, usando métricas multidimensionais em vez de uma única média.
+
+        **Fase 3: Cultura de Dados (Longo Prazo)**
+        7.  **Implementação de Dashboards Interativos:** Sugira a substituição de relatórios estáticos por dashboards interativos.
+        8.  **Estabelecer Rituais de Análise de Dados:** Recomende a criação de um ciclo semestral de "Análise e Ação".
+
+        Conclua com um parágrafo final que reforce a importância de uma gestão proativa e orientada por dados.
+        """
+
+        response = model.generate_content(prompt_content)
+        return response.text.strip()
+    except Exception as e:
+        return f"Erro ao contatar a API do Gemini: {e}"
+
 def analyze_sentiment(comment):
     if not isinstance(comment, str): return 0
     comment_lower = comment.lower()
@@ -34,7 +105,6 @@ def get_top_keywords(comments, n=3):
     words = []
     for text in comments:
         if not isinstance(text, str): continue
-        # Remove pontuação simples e separa as palavras
         cleaned_text = text.lower().replace(',', '').replace('.', '').replace('!', '').replace('?', '')
         words.extend([word for word in cleaned_text.split() if word not in STOPWORDS and len(word) > 2])
     
@@ -44,15 +114,13 @@ def get_top_keywords(comments, n=3):
     return [word for word, count in Counter(words).most_common(n)]
 
 def generate_suggestion_object(avg_score, sentiment_score, score_distribution, comments):
-    # A variável keywords e keyword_text não são mais usadas na string final, mas a lógica pode ser mantida para futuras melhorias.
     keywords = get_top_keywords(comments)
     
-    # Análise de polarização
     polarization_text = ""
     if score_distribution:
         total_votes = sum(score_distribution.values())
         extremos = score_distribution.get(1, 0) + score_distribution.get(5, 0)
-        if total_votes > 10 and (extremos / total_votes) > 0.4: # Mais de 40% das notas são 1 ou 5
+        if total_votes > 10 and (extremos / total_votes) > 0.4:
             polarization_text = " Nota-se uma alta polarização nas respostas (muitas notas 1 e 5), indicando uma experiência de 'ame ou odeie'."
 
     if avg_score < 2.5 and sentiment_score < -0.5:
@@ -98,6 +166,7 @@ def create_dataframe(evaluations_list):
         return None
         
     df.dropna(subset=nota_cols, how='all', inplace=True)
+    df.replace({np.nan: None}, inplace=True) # Replace NaN with None for JSON serialization
     return df if not df.empty else None
 
 def get_previous_metrics(df_previous):
@@ -115,11 +184,10 @@ def get_previous_metrics(df_previous):
 
 def run_analysis(df):
     if df is None:
-        return {"suggestions": [], "averages_by_question": {}, "analysis_by_question": {}, "score_distribution": {}}
+        return {"analysis_by_question": {}, "score_distribution": {}, "averages_by_question": {}}
 
-    averages_by_question = {}
     analysis_by_question = {}
-    suggestions = []
+    averages_by_question = {}
     aggregated_score_distribution = Counter()
 
     for key, name in CATEGORIES.items():
@@ -133,7 +201,6 @@ def run_analysis(df):
 
         avg_score = valid_scores.mean()
         averages_by_question[name] = {"value": round(avg_score, 2), "delta": None}
-
         score_distribution = valid_scores.value_counts().to_dict()
         aggregated_score_distribution.update(score_distribution)
         
@@ -144,12 +211,6 @@ def run_analysis(df):
             sentiment_score = df[comentario_col].dropna().apply(analyze_sentiment).mean()
 
         suggestion_obj = generate_suggestion_object(avg_score, sentiment_score, score_distribution, comments)
-        if suggestion_obj:
-            suggestions.append({
-                "category": name,
-                "score": round(avg_score, 2),
-                "suggestion": suggestion_obj
-            })
 
         analysis_by_question[key] = {
             "name": name,
@@ -161,47 +222,14 @@ def run_analysis(df):
         }
     
     return {
-        "averages_by_question": averages_by_question,
-        "suggestions": suggestions,
         "analysis_by_question": analysis_by_question,
-        "score_distribution": {int(k): int(v) for k, v in aggregated_score_distribution.items()}
+        "score_distribution": {int(k): int(v) for k, v in aggregated_score_distribution.items()},
+        "averages_by_question": averages_by_question
     }
-
-def generate_executive_summary(result):
-    if not result or not result.get("suggestions"):
-        return "Não foi possível gerar um resumo devido à falta de dados de avaliação."
-
-    suggestions = result["suggestions"]
-    avg_final = result.get("average_media_final", {}).get("value", 0)
-
-    strong_points = sorted([s for s in suggestions if s.get("suggestion", {}).get("type") == "Ponto Forte"], key=lambda x: x["score"], reverse=True)
-    attention_points = sorted([s for s in suggestions if "Atenção" in s.get("suggestion", {}).get("type") or "Crítico" in s.get("suggestion", {}).get("type")], key=lambda x: x["score"])
-
-    summary = f"O relatório geral indica um desempenho com média final de {avg_final:.2f}. "
-
-    if strong_points:
-        top_strong_points = [s["category"] for s in strong_points[:2]]
-        summary += f"Os destaques positivos foram em **{', '.join(top_strong_points)}**, onde os alunos demonstraram alta satisfação. "
-    
-    if attention_points:
-        top_attention_points = [s["category"] for s in attention_points[:2]]
-        summary += f"Por outro lado, as áreas que requerem maior atenção são **{', '.join(top_attention_points)}**. "
-
-    if strong_points and attention_points:
-        summary += "Recomenda-se focar os esforços de melhoria nas áreas críticas, enquanto se mantém e dissemina as boas práticas das áreas de destaque."
-    elif attention_points:
-        summary += "É crucial focar os esforços de melhoria nessas áreas para elevar a satisfação geral."
-    elif strong_points:
-        summary += "O desempenho geral é muito positivo. O foco deve ser em manter a excelência e identificar oportunidades de melhoria incremental."
-    else:
-        summary += "O desempenho geral é neutro, sem pontos de destaque ou de grande preocupação. Recomenda-se uma análise mais aprofundada para identificar oportunidades de melhoria."
-
-    return summary
 
 def main():
     sys.stdin.reconfigure(encoding='utf-8')
     sys.stdout.reconfigure(encoding='utf-8')
-
 
     raw_data = sys.stdin.read()
     
@@ -246,7 +274,15 @@ def main():
                 delta = analysis["average_score"]["value"] - previous_metrics[name]
                 analysis["average_score"]["delta"] = round(delta, 2)
 
-    result["executive_summary"] = generate_executive_summary(result)
+    all_comments = {item['name']: item['comments'] for item in result["analysis_by_question"].values() if item['comments']}
+    result["detailed_analysis"] = get_detailed_analysis(result["analysis_by_question"], result["average_media_final"]["value"], all_comments)
+    
+    # Adicionando raw_data ao resultado final
+    if df_current is not None:
+        result['raw_data'] = df_current.to_dict(orient='records')
+    else:
+        result['raw_data'] = []
+
     print(json.dumps(result, ensure_ascii=False))
 
 if __name__ == '__main__':

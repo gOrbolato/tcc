@@ -50,17 +50,21 @@ const generatePdfReport = (institutionId_1, ...args_1) => __awaiter(void 0, [ins
 });
 exports.generatePdfReport = generatePdfReport;
 const generateAnalysisForInstitution = (institutionId_1, ...args_1) => __awaiter(void 0, [institutionId_1, ...args_1], void 0, function* (institutionId, options = {}) {
-    const fetchEvaluations = (startDate, endDate) => __awaiter(void 0, void 0, void 0, function* () {
+    const fetchEvaluations = (startDate, endDate, courseId) => __awaiter(void 0, void 0, void 0, function* () {
         let query = 'SELECT * FROM Avaliacoes WHERE instituicao_id = ?';
         const params = [institutionId];
         if (startDate && endDate) {
             query += ' AND criado_em BETWEEN ? AND ?';
             params.push(startDate, endDate);
         }
+        if (courseId) {
+            query += ' AND curso_id = ?';
+            params.push(courseId);
+        }
         const [evaluations] = yield database_1.default.query(query, params);
         return evaluations;
     });
-    const currentEvaluations = yield fetchEvaluations(options.currentStart, options.currentEnd);
+    const currentEvaluations = yield fetchEvaluations(options.currentStart, options.currentEnd, options.courseId);
     if (currentEvaluations.length === 0) {
         return {
             suggestions: [],
@@ -73,7 +77,7 @@ const generateAnalysisForInstitution = (institutionId_1, ...args_1) => __awaiter
             raw_data: [],
         };
     }
-    const previousEvaluations = yield fetchEvaluations(options.previousStart, options.previousEnd);
+    const previousEvaluations = yield fetchEvaluations(options.previousStart, options.previousEnd, options.courseId);
     // NEW: Filter to keep only the latest evaluation per user for analysis
     const filterLatestEvaluationPerUser = (evaluations) => {
         const latestEvaluationsMap = new Map(); // Map<userId, latestEvaluation>

@@ -27,15 +27,18 @@ export const getCourses = async (req: Request, res: Response) => {
 
 export const createInstitution = async (req: Request, res: Response) => {
   try {
-    const { nome, latitude, longitude } = req.body as any;
+    const { nome, latitude, longitude, cidade, estado } = req.body as any;
     if (!nome) return res.status(400).json({ message: 'Nome da instituição é obrigatório.' });
     const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
     // Avoid duplicates (case-insensitive)
     const [exists] = await pool.query<RowDataPacket[]>('SELECT id FROM Instituicoes WHERE LOWER(nome) = ?', [nomeNorm.toLowerCase()]);
     if (exists.length > 0) return res.status(409).json({ message: 'Instituição já existe.' });
-    const [result] = await pool.query<any>('INSERT INTO Instituicoes (nome, latitude, longitude, is_active) VALUES (?, ?, ?, TRUE)', [nomeNorm, latitude || null, longitude || null]);
+    const [result] = await pool.query<any>(
+      'INSERT INTO Instituicoes (nome, latitude, longitude, cidade, estado, is_active) VALUES (?, ?, ?, ?, ?, TRUE)', 
+      [nomeNorm, latitude || null, longitude || null, cidade || null, estado || null]
+    );
     const insertId = result.insertId;
-    const [rows] = await pool.query<RowDataPacket[]>('SELECT id, nome, latitude, longitude FROM Instituicoes WHERE id = ?', [insertId]);
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT id, nome, latitude, longitude, cidade, estado FROM Instituicoes WHERE id = ?', [insertId]);
     res.status(201).json(rows[0]);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -112,13 +115,39 @@ export const getCoursesByInstitution = async (req: Request, res: Response) => {
 
 export const getInstitutionsNearby = async (req: Request, res: Response) => {
   try {
-    const { latitude, longitude, radius } = req.query;
-    if (!latitude || !longitude || !radius) {
-      return res.status(400).json({ message: 'Latitude, longitude e raio são obrigatórios.' });
+    const { lat, lon, radius = 100 } = req.query; // Default radius to 100km
+    if (!lat || !lon) {
+      return res.status(400).json({ message: 'Latitude e longitude são obrigatórias.' });
     }
-    const nearbyInstitutions = await institutionCourseService.getInstitutionsNearby(Number(latitude), Number(longitude), Number(radius));
+    const nearbyInstitutions = await institutionCourseService.getInstitutionsNearby(Number(lat), Number(lon), Number(radius));
     res.status(200).json(nearbyInstitutions);
   } catch (error: any) {
     res.status(500).json({ message: 'Erro ao buscar instituições próximas.', error: error.message });
+  }
+};
+
+export const mergeInstitution = async (req: Request, res: Response) => {
+  try {
+    const { sourceId, destinationId } = req.body;
+    if (!sourceId || !destinationId) {
+      return res.status(400).json({ message: 'IDs de origem e destino são obrigatórios.' });
+    }
+    await institutionCourseService.mergeInstitution(Number(sourceId), Number(destinationId));
+    res.status(200).json({ message: 'Instituições mescladas com sucesso!' });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erro ao mesclar instituições.', error: error.message });
+  }
+};
+
+export const mergeCourse = async (req: Request, res: Response) => {
+  try {
+    const { sourceId, destinationId } = req.body;
+    if (!sourceId || !destinationId) {
+      return res.status(400).json({ message: 'IDs de origem e destino são obrigatórios.' });
+    }
+    await institutionCourseService.mergeCourse(Number(sourceId), Number(destinationId));
+    res.status(200).json({ message: 'Cursos mesclados com sucesso!' });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erro ao mesclar cursos.', error: error.message });
   }
 };

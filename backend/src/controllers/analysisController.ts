@@ -4,11 +4,12 @@ import * as analysisService from '../services/analysisService';
 export const getInstitutionAnalysis = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { 
-      currentStart, 
-      currentEnd, 
-      previousStart, 
-      previousEnd 
+    const {
+      currentStart,
+      currentEnd,
+      previousStart,
+      previousEnd,
+      courseId,
     } = req.query;
 
     if (!id) {
@@ -20,8 +21,8 @@ export const getInstitutionAnalysis = async (req: Request, res: Response) => {
       currentEnd: currentEnd as string | undefined,
       previousStart: previousStart as string | undefined,
       previousEnd: previousEnd as string | undefined,
+      courseId: courseId as string | undefined,
     };
-
     const analysisResult = await analysisService.generateAnalysisForInstitution(Number(id), options);
     res.status(200).json(analysisResult);
 

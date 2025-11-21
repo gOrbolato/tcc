@@ -1,10 +1,14 @@
 import sys
 import json
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
+def parse_and_style_text(text):
+    """Converts markdown-like bold (**text**) to ReportLab's <b>text</b>."""
+    return text.replace('**', '<b>').replace('**', '</b>')
 
 def generate_pdf_report():
     # Read JSON data from stdin
@@ -16,78 +20,70 @@ def generate_pdf_report():
     
     # Custom styles
     styles.add(ParagraphStyle(name='ReportTitle', fontSize=24, leading=28, alignment=TA_CENTER, spaceAfter=20))
-    styles.add(ParagraphStyle(name='SectionTitle', fontSize=16, leading=20, spaceAfter=10, textColor='#333333'))
-    styles.add(ParagraphStyle(name='SubSectionTitle', fontSize=12, leading=14, spaceAfter=5, textColor='#555555'))
+    styles.add(ParagraphStyle(name='SectionTitle', fontSize=18, leading=22, spaceAfter=12, textColor='#2c3e50'))
+    styles.add(ParagraphStyle(name='SubSectionTitle', fontSize=14, leading=16, spaceAfter=8, textColor='#34495e'))
     
-    # Modify existing 'BodyText' style instead of adding a new one
     styles['BodyText'].fontSize = 10
-    styles['BodyText'].leading = 12
-    styles['BodyText'].spaceAfter = 6
-
-    styles.add(ParagraphStyle(name='HighlightText', fontSize=10, leading=12, spaceAfter=6, textColor='#0056b3'))
-    styles.add(ParagraphStyle(name='Positive', fontSize=10, leading=12, spaceAfter=6, textColor='#28a745'))
-    styles.add(ParagraphStyle(name='Attention', fontSize=10, leading=12, spaceAfter=6, textColor='#ffc107'))
-    styles.add(ParagraphStyle(name='Critical', fontSize=10, leading=12, spaceAfter=6, textColor='#dc3545'))
+    styles['BodyText'].leading = 14
+    styles['BodyText'].spaceAfter = 10
 
     story = []
 
     # Title
-    story.append(Paragraph("Relatório de Avaliações", styles['ReportTitle']))
+    story.append(Paragraph("Relatório de Análise de Avaliações", styles['ReportTitle']))
     story.append(Spacer(1, 0.2 * inch))
 
-    # Executive Summary
-    story.append(Paragraph("Resumo Executivo da Análise", styles['SectionTitle']))
-    executive_summary_text = report_data.get("executive_summary", "Nenhum resumo executivo disponível.")
-    # Replace **text** with <b>text</b> for ReportLab
-    executive_summary_text = executive_summary_text.replace('**', '<b>').replace('**', '</b>') # Replace all occurrences
-    story.append(Paragraph(executive_summary_text, styles['BodyText']))
-    story.append(Spacer(1, 0.3 * inch))
-
-    # General Summary
-    story.append(Paragraph("Resumo Geral", styles['SectionTitle']))
+    # General Summary (Still useful to have)
+    story.append(Paragraph("Resumo Geral dos Dados", styles['SectionTitle']))
     total_evaluations = report_data.get("total_evaluations", {"value": 0, "delta": None})
     average_media_final = report_data.get("average_media_final", {"value": 0, "delta": None})
 
     story.append(Paragraph(f"Total de Avaliações: <b>{total_evaluations['value']}</b>", styles['BodyText']))
     if total_evaluations['delta'] is not None:
         delta_text = f" ({'+' if total_evaluations['delta'] > 0 else ''}{total_evaluations['delta']:.2f} vs. período anterior)"
-        story.append(Paragraph(f"<font color='{styles['HighlightText'].textColor}'>{delta_text}</font>", styles['BodyText']))
+        story.append(Paragraph(f"<font color='#555'>{delta_text}</font>", styles['BodyText']))
     
     story.append(Paragraph(f"Média Final Geral: <b>{average_media_final['value']:.2f}</b>", styles['BodyText']))
     if average_media_final['delta'] is not None:
         delta_text = f" ({'+' if average_media_final['delta'] > 0 else ''}{average_media_final['delta']:.2f} vs. período anterior)"
-        story.append(Paragraph(f"<font color='{styles['HighlightText'].textColor}'>{delta_text}</font>", styles['BodyText']))
+        story.append(Paragraph(f"<font color='#555'>{delta_text}</font>", styles['BodyText']))
     story.append(Spacer(1, 0.3 * inch))
 
-    # Suggestions and Insights
-    story.append(Paragraph("Sugestões e Insights", styles['SectionTitle']))
-    suggestions = report_data.get("suggestions", [])
-    if suggestions:
-        for suggestion_item in suggestions:
-            category = suggestion_item.get("category", "N/A")
-            score = suggestion_item.get("score", 0)
-            suggestion_detail = suggestion_item.get("suggestion", {})
+    # Detailed AI Analysis
+    detailed_analysis = report_data.get("detailed_analysis")
+    if detailed_analysis:
+        # Split the analysis into lines and process each one
+        lines = detailed_analysis.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Handle section titles (###)
+            if line.startswith('###'):
+                title_text = line.replace('###', '').strip()
+                story.append(Paragraph(title_text, styles['SectionTitle']))
+                story.append(Spacer(1, 0.1 * inch))
             
-            type_text = suggestion_detail.get("type", "N/A")
-            description = suggestion_detail.get("description", "N/A")
-            recommendation = suggestion_detail.get("recommendation", "N/A")
+            # Handle sub-section titles (e.g., 1. The "Performance Plateau" Hypothesis:)
+            elif line.startswith('**') and line.endswith('**'):
+                title_text = line.replace('**', '').strip()
+                story.append(Paragraph(f"<b>{title_text}</b>", styles['SubSectionTitle']))
 
-            style_for_type = styles['BodyText']
-            if "Ponto Forte" in type_text or "Ponto Positivo" in type_text:
-                style_for_type = styles['Positive']
-            elif "Ponto de Atenção" in type_text:
-                style_for_type = styles['Attention']
-            elif "Ponto Crítico" in type_text:
-                style_for_type = styles['Critical']
+            # Handle list items (* or number.)
+            elif line.startswith('* ') or (line and line[0].isdigit() and line[1] == '.'):
+                list_item_text = line.split(' ', 1)[1]
+                # Use a simple paragraph with a bullet character for simplicity
+                story.append(Paragraph(f"• {parse_and_style_text(list_item_text)}", styles['BodyText'], bulletText='•'))
 
-            story.append(Paragraph(f"<b>{category}</b> (Média: {score:.1f})", styles['SubSectionTitle']))
-            story.append(Paragraph(f"<b>{type_text}:</b> {description}", style_for_type))
-            story.append(Paragraph(f"<b>Recomendação:</b> {recommendation}", styles['BodyText']))
-            story.append(Spacer(1, 0.1 * inch))
+            # Handle normal paragraphs
+            else:
+                story.append(Paragraph(parse_and_style_text(line), styles['BodyText']))
     else:
-        story.append(Paragraph("Nenhuma sugestão disponível.", styles['BodyText']))
+        story.append(Paragraph("Nenhuma análise detalhada disponível.", styles['BodyText']))
     
     doc.build(story)
 
 if __name__ == '__main__':
     generate_pdf_report()
+

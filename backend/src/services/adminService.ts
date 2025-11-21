@@ -73,7 +73,7 @@ export const getAdminReportData = async (filters: ReportFilters) => {
 
   // Chamar o script Python para análise avançada
   const pythonAnalysis: PythonAnalysisResult = await new Promise((resolve, reject) => {
-    const pythonProcess = spawn('py', ['./python_scripts/analyze_evaluations.py'], {
+    const pythonProcess = spawn('C:\\Users\\GuilhermeOrbolato\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', ['./python_scripts/analyze_evaluations.py'], {
       cwd: __dirname + '/../../',
     });
 
@@ -150,7 +150,7 @@ export const generateReports = async () => {
 
   // Se houver avaliações, prossegue com a análise Python
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn('py', ['./python_scripts/analyze_evaluations.py'], {
+    const pythonProcess = spawn('C:\\Users\\GuilhermeOrbolato\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', ['./python_scripts/analyze_evaluations.py'], {
       cwd: __dirname + '/../../',
     });
 

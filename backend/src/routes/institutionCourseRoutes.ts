@@ -10,7 +10,9 @@ import {
     updateCourse, 
     deleteCourse,
     getCoursesByInstitution, // Adicionando a função que faltava
-    getInstitutionsNearby
+    getInstitutionsNearby,
+    mergeInstitution,
+    mergeCourse
 } from '../controllers/institutionCourseController';
 import { authenticate } from '../middlewares/authMiddleware';
 import { isAdmin } from '../middlewares/isAdmin';
@@ -46,6 +48,8 @@ router.get('/courses', getCourses);
 // Rotas de gerenciamento de curso para admins
 router.put('/courses/:id', authenticate, isAdmin, updateCourse);
 router.delete('/courses/:id', authenticate, isAdmin, deleteCourse);
+router.post('/institutions/merge', authenticate, isAdmin, mergeInstitution);
+router.post('/courses/merge', authenticate, isAdmin, mergeCourse);
 
 
 export default router;

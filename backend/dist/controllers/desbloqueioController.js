@@ -42,11 +42,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rejectDesbloqueio = exports.approveDesbloqueio = exports.getPendingDesbloqueios = void 0;
+exports.rejectDesbloqueio = exports.approveDesbloqueio = exports.getPendingDesbloqueioCount = exports.getPendingDesbloqueios = void 0;
 const desbloqueioService = __importStar(require("../services/desbloqueioService"));
-const getPendingDesbloqueios = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getPendingDesbloqueios = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const requests = yield desbloqueioService.getPendingDesbloqueios();
+        const { date } = req.query;
+        const requests = yield desbloqueioService.getPendingDesbloqueios(date);
         res.status(200).json(requests);
     }
     catch (error) {
@@ -54,6 +55,16 @@ const getPendingDesbloqueios = (_req, res) => __awaiter(void 0, void 0, void 0, 
     }
 });
 exports.getPendingDesbloqueios = getPendingDesbloqueios;
+const getPendingDesbloqueioCount = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const count = yield desbloqueioService.getPendingDesbloqueioCount();
+        res.status(200).json({ count });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar contagem de solicitações.', error: error.message });
+    }
+});
+exports.getPendingDesbloqueioCount = getPendingDesbloqueioCount;
 const approveDesbloqueio = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;

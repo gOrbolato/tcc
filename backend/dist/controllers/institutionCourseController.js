@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getInstitutionsNearby = exports.getCoursesByInstitution = exports.deleteCourse = exports.updateCourse = exports.createCourse = exports.deleteInstitution = exports.updateInstitution = exports.createInstitution = exports.getCourses = exports.getInstitutions = void 0;
+exports.mergeCourse = exports.mergeInstitution = exports.getInstitutionsNearby = exports.getCoursesByInstitution = exports.deleteCourse = exports.updateCourse = exports.createCourse = exports.deleteInstitution = exports.updateInstitution = exports.createInstitution = exports.getCourses = exports.getInstitutions = void 0;
 const institutionCourseService = __importStar(require("../services/institutionCourseService"));
 const database_1 = __importDefault(require("../config/database"));
 const getInstitutions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -73,7 +73,7 @@ exports.getCourses = getCourses;
 // Dummy implementations for the missing functions
 const createInstitution = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { nome, latitude, longitude } = req.body;
+        const { nome, latitude, longitude, cidade, estado } = req.body;
         if (!nome)
             return res.status(400).json({ message: 'Nome da instituição é obrigatório.' });
         const nomeNorm = String(nome).trim().replace(/\s+/g, ' ');
@@ -81,9 +81,9 @@ const createInstitution = (req, res) => __awaiter(void 0, void 0, void 0, functi
         const [exists] = yield database_1.default.query('SELECT id FROM Instituicoes WHERE LOWER(nome) = ?', [nomeNorm.toLowerCase()]);
         if (exists.length > 0)
             return res.status(409).json({ message: 'Instituição já existe.' });
-        const [result] = yield database_1.default.query('INSERT INTO Instituicoes (nome, latitude, longitude, is_active) VALUES (?, ?, ?, TRUE)', [nomeNorm, latitude || null, longitude || null]);
+        const [result] = yield database_1.default.query('INSERT INTO Instituicoes (nome, latitude, longitude, cidade, estado, is_active) VALUES (?, ?, ?, ?, ?, TRUE)', [nomeNorm, latitude || null, longitude || null, cidade || null, estado || null]);
         const insertId = result.insertId;
-        const [rows] = yield database_1.default.query('SELECT id, nome, latitude, longitude FROM Instituicoes WHERE id = ?', [insertId]);
+        const [rows] = yield database_1.default.query('SELECT id, nome, latitude, longitude, cidade, estado FROM Instituicoes WHERE id = ?', [insertId]);
         res.status(201).json(rows[0]);
     }
     catch (error) {
@@ -169,11 +169,11 @@ const getCoursesByInstitution = (req, res) => __awaiter(void 0, void 0, void 0, 
 exports.getCoursesByInstitution = getCoursesByInstitution;
 const getInstitutionsNearby = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { latitude, longitude, radius } = req.query;
-        if (!latitude || !longitude || !radius) {
-            return res.status(400).json({ message: 'Latitude, longitude e raio são obrigatórios.' });
+        const { lat, lon, radius = 100 } = req.query; // Default radius to 100km
+        if (!lat || !lon) {
+            return res.status(400).json({ message: 'Latitude e longitude são obrigatórias.' });
         }
-        const nearbyInstitutions = yield institutionCourseService.getInstitutionsNearby(Number(latitude), Number(longitude), Number(radius));
+        const nearbyInstitutions = yield institutionCourseService.getInstitutionsNearby(Number(lat), Number(lon), Number(radius));
         res.status(200).json(nearbyInstitutions);
     }
     catch (error) {
@@ -181,3 +181,31 @@ const getInstitutionsNearby = (req, res) => __awaiter(void 0, void 0, void 0, fu
     }
 });
 exports.getInstitutionsNearby = getInstitutionsNearby;
+const mergeInstitution = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sourceId, destinationId } = req.body;
+        if (!sourceId || !destinationId) {
+            return res.status(400).json({ message: 'IDs de origem e destino são obrigatórios.' });
+        }
+        yield institutionCourseService.mergeInstitution(Number(sourceId), Number(destinationId));
+        res.status(200).json({ message: 'Instituições mescladas com sucesso!' });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erro ao mesclar instituições.', error: error.message });
+    }
+});
+exports.mergeInstitution = mergeInstitution;
+const mergeCourse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { sourceId, destinationId } = req.body;
+        if (!sourceId || !destinationId) {
+            return res.status(400).json({ message: 'IDs de origem e destino são obrigatórios.' });
+        }
+        yield institutionCourseService.mergeCourse(Number(sourceId), Number(destinationId));
+        res.status(200).json({ message: 'Cursos mesclados com sucesso!' });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Erro ao mesclar cursos.', error: error.message });
+    }
+});
+exports.mergeCourse = mergeCourse;

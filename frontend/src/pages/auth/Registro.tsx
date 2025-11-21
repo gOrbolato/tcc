@@ -5,7 +5,7 @@ import AuthLayout from '../../components/AuthLayout';
 import api from '../../services/api';
 
 // 1. Importar todos os componentes de formulário necessários
-import { TextField, Button, Box, Typography, Link, CircularProgress, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { TextField, Button, Box, Typography, Link, CircularProgress, FormControl, InputLabel, Select, MenuItem, Autocomplete } from '@mui/material';
 
 // Definir tipos para os dados (bom para clareza)
 interface Instituicao {
@@ -16,6 +16,7 @@ interface Instituicao {
 interface Curso {
   id: number;
   nome: string;
+  institution_id: number;
 }
 
 const Registro: React.FC = () => {
@@ -26,8 +27,8 @@ const Registro: React.FC = () => {
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [ra, setRa] = useState('');
   const [cpf, setCpf] = useState('');
-  const [instituicaoTexto, setInstituicaoTexto] = useState('');
-  const [cursoTexto, setCursoTexto] = useState('');
+  const [instituicao, setInstituicao] = useState<Instituicao | null>(null);
+  const [curso, setCurso] = useState<Curso | null>(null);
   const [semestre, setSemestre] = useState('');
   const [periodo, setPeriodo] = useState('');
   const [previsaoTermino, setPrevisaoTermino] = useState('');
@@ -36,11 +37,51 @@ const Registro: React.FC = () => {
 
   // States de loading e dados dos dropdowns
   const [loading, setLoading] = useState(false);
+  const [instituicoes, setInstituicoes] = useState<Instituicao[]>([]);
+  const [cursos, setCursos] = useState<Curso[]>([]);
+  const [cursosFiltrados, setCursosFiltrados] = useState<Curso[]>([]);
 
   const navigate = useNavigate();
   const { showNotification } = useNotification();
 
-  // Note: institution/course selects removed; user types institution/curso in the text fields below
+  useEffect(() => {
+    const fetchInstituicoes = async () => {
+      try {
+        const response = await api.get('/institutions');
+        setInstituicoes(response.data);
+      } catch (error) {
+        console.error("Failed to fetch institutions", error);
+      }
+    };
+
+    const fetchCursos = async () => {
+      try {
+        const response = await api.get('/courses');
+        setCursos(response.data);
+      } catch (error) {
+        console.error("Failed to fetch courses", error);
+      }
+    };
+
+    fetchInstituicoes();
+    fetchCursos();
+  }, []);
+
+  useEffect(() => {
+    if (instituicao) {
+      const fetchCoursesByInstitution = async () => {
+        try {
+          const response = await api.get(`/institutions/${instituicao.id}/courses`);
+          setCursosFiltrados(response.data);
+        } catch (error) {
+          console.error("Failed to fetch courses for the selected institution", error);
+        }
+      };
+      fetchCoursesByInstitution();
+    } else {
+      setCursosFiltrados([]);
+    }
+  }, [instituicao]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,10 +97,10 @@ const Registro: React.FC = () => {
         senha,
         ra,
         cpf: cpf || undefined,
-  institutionText: instituicaoTexto || undefined,
-  courseText: cursoTexto || undefined,
-          cidade: cidade || undefined,
-          estado: estado || undefined,
+        institutionId: instituicao?.id,
+        courseId: curso?.id,
+        cidade: cidade || undefined,
+        estado: estado || undefined,
         semestre: semestre ? Number(semestre) : undefined,
         periodo: periodo || undefined,
         previsaoTermino: previsaoTermino || undefined,
@@ -67,14 +108,20 @@ const Registro: React.FC = () => {
       showNotification('Registro realizado com sucesso!', 'success');
       navigate('/login');
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Erro ao realizar registro. Verifique seus dados.';
-      showNotification(errorMessage, 'error');
+      if (error.response && error.response.status === 400 && error.response.data.errors) {
+        // Se for um erro de validação do backend, mostrar cada erro individualmente
+        error.response.data.errors.forEach((err: any) => {
+          showNotification(err.msg, 'error');
+        });
+      } else {
+        // Fallback para outros tipos de erro
+        const errorMessage = error.response?.data?.message || 'Erro ao realizar registro. Verifique seus dados.';
+        showNotification(errorMessage, 'error');
+      }
     } finally {
       setLoading(false);
     }
   };
-
-  // (select handlers removed)
 
   return (
     <AuthLayout title="Criar Conta">
@@ -129,31 +176,30 @@ const Registro: React.FC = () => {
 
           {/* Instituição (full width) */}
           <Box sx={{ gridColumn: '1 / -1' }}>
-            <TextField
-              margin="normal"
-              fullWidth
-              id="instituicao-texto"
-              label="Instituição"
-              name="instituicao-texto"
-              placeholder="Digite sua instituição"
-              value={instituicaoTexto}
-              onChange={(e) => setInstituicaoTexto(e.target.value)}
-              disabled={loading}
+            <Autocomplete
+              id="instituicao"
+              options={instituicoes}
+              getOptionLabel={(option) => option.nome}
+              onChange={(event, newValue) => {
+                setInstituicao(newValue);
+                setCurso(null);
+              }}
+              renderInput={(params) => <TextField {...params} label="Instituição" margin="normal" fullWidth />}
             />
           </Box>
 
           {/* Curso (full width) */}
           <Box sx={{ gridColumn: '1 / -1' }}>
-            <TextField
-              margin="normal"
-              fullWidth
-              id="curso-texto"
-              label="Curso"
-              name="curso-texto"
-              placeholder="Digite seu curso"
-              value={cursoTexto}
-              onChange={(e) => setCursoTexto(e.target.value)}
-              disabled={loading}
+            <Autocomplete
+              id="curso"
+              options={cursosFiltrados}
+              getOptionLabel={(option) => option.nome}
+              onChange={(event, newValue) => {
+                setCurso(newValue);
+              }}
+              value={curso}
+              disabled={!instituicao}
+              renderInput={(params) => <TextField {...params} label="Curso" margin="normal" fullWidth />}
             />
           </Box>
 

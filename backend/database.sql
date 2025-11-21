@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS Instituicoes (
     nome VARCHAR(255) NOT NULL UNIQUE,
     latitude DECIMAL(10,8),
     longitude DECIMAL(11,8),
+    cidade VARCHAR(255),
+    estado VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

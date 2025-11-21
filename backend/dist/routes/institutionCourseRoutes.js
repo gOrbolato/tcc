@@ -26,4 +26,6 @@ router.get('/courses', institutionCourseController_1.getCourses);
 // Rotas de gerenciamento de curso para admins
 router.put('/courses/:id', authMiddleware_1.authenticate, isAdmin_1.isAdmin, institutionCourseController_1.updateCourse);
 router.delete('/courses/:id', authMiddleware_1.authenticate, isAdmin_1.isAdmin, institutionCourseController_1.deleteCourse);
+router.post('/institutions/merge', authMiddleware_1.authenticate, isAdmin_1.isAdmin, institutionCourseController_1.mergeInstitution);
+router.post('/courses/merge', authMiddleware_1.authenticate, isAdmin_1.isAdmin, institutionCourseController_1.mergeCourse);
 exports.default = router;

@@ -38,13 +38,15 @@ export const register = async (userData: any) => {
     ra,
     email,
     senha,
-    instituicao_id,
-    curso_id,
+    institutionId,
+    courseId,
     institutionText,
     courseText,
     periodo,
     semestre,
     previsaoTermino,
+    institutionCity, // Novo campo
+    institutionState, // Novo campo
   } = userData;
 
   // Verificações básicas
@@ -66,8 +68,8 @@ export const register = async (userData: any) => {
   const hashedPassword = await bcrypt.hash(senha, 10);
 
   // Resolver instituição e curso: se institutionText/courseText fornecidos, tentar encontrar por nome ou criar
-  let finalInstituicaoId = instituicao_id;
-  let finalCursoId = curso_id;
+  let finalInstituicaoId = institutionId;
+  let finalCursoId = courseId;
   // Normalização simples: trim, collapse múltiplos espaços
   const normalize = (s: any) => {
     if (!s && s !== '') return s;
@@ -76,6 +78,8 @@ export const register = async (userData: any) => {
 
   const institutionTextNorm = normalize(institutionText);
   const courseTextNorm = normalize(courseText);
+  const institutionCityNorm = normalize(institutionCity);
+  const institutionStateNorm = normalize(institutionState);
 
   // Logic for Institution
   if (!finalInstituicaoId && institutionTextNorm) {
@@ -89,11 +93,18 @@ export const register = async (userData: any) => {
     } else {
         // 2. If not found, create it
         try {
-            const [insertInst] = await pool.query<OkPacket>('INSERT INTO Instituicoes (nome, is_active) VALUES (?, TRUE)', [institutionTextNorm]);
+            const [insertInst] = await pool.query<OkPacket>(
+              'INSERT INTO Instituicoes (nome, cidade, estado, is_active) VALUES (?, ?, ?, TRUE)', 
+              [institutionTextNorm, institutionCityNorm, institutionStateNorm]
+            );
             if (insertInst.insertId) {
                 institutionId = insertInst.insertId;
                 // Optional: log the auto-creation
-                await logAutoCreatedEntity('instituicao', institutionTextNorm, email, { createdId: institutionId }).catch(e => console.error("Logging failed", e));
+                await logAutoCreatedEntity('instituicao', institutionTextNorm, email, { 
+                  createdId: institutionId, 
+                  cidade: institutionCityNorm, 
+                  estado: institutionStateNorm 
+                }).catch(e => console.error("Logging failed", e));
             }
         } catch (error: any) {
             // This can happen in a race condition where another request created the institution between our SELECT and INSERT.
@@ -278,7 +289,8 @@ export const validateUnlockCode = async (cpf: string, code: string) => {
   const desbloqueio = desbloqueioRows[0];
 
   // 3. Validar o código
-  if (!desbloqueio.verification_code || desbloqueio.verification_code !== code) {
+  const isCodeValid = await bcrypt.compare(code, desbloqueio.verification_code);
+  if (!desbloqueio.verification_code || !isCodeValid) {
     throw new Error('Código de verificação inválido.');
   }
 

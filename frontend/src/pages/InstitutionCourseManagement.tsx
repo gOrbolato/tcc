@@ -17,12 +17,14 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import MergeIcon from '@mui/icons-material/Merge';
 import api from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
-import FilterActions from '../pages/admin/reports/components/FilterActions';
-
+import GenericSearchFilter from './admin/reports/components/GenericSearchFilter';
+import ReportFilters, { type SearchOptions } from './admin/reports/components/ReportFilters';
 import EditInstitutionModal from './admin/components/EditInstitutionModal';
 import EditCourseModal from './admin/components/EditCourseModal';
+import MergeModal from './admin/components/MergeModal';
 import type { Course } from '../types/course';
 
 // Types
@@ -34,18 +36,22 @@ const InstituicaoCRUD: React.FC<{
   institutions: Instituicao[];
   loading: boolean;
   onDelete: (id: number) => Promise<void>;
-  onSearch: (q?: string) => Promise<void>;
+  onSearch: (q: string) => Promise<void>;
   onEdit?: (inst: Instituicao) => void;
-}> = ({ institutions, loading, onDelete, onSearch, onEdit }) => {
-  const [query, setQuery] = useState('');
-
+  onMerge?: (inst: Instituicao) => void;
+}> = ({ institutions, loading, onDelete, onSearch, onEdit, onMerge }) => {
   return (
     <Box>
       <Typography variant="h6" gutterBottom>Instituições</Typography>
 
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-        <TextField placeholder="Buscar instituições" value={query} onChange={(e) => setQuery(e.target.value)} sx={{ flex: 1 }} />
-        <FilterActions onSearch={() => onSearch(query)} onClear={() => { setQuery(''); onSearch(); }} searching={loading} searchLabel="BUSCAR" />
+      <Box sx={{ mb: 2 }}>
+        <GenericSearchFilter
+          onSearch={(q) => onSearch(q)}
+          onClear={() => onSearch('')}
+          loading={loading}
+          placeholder="Buscar instituições"
+          searchLabel="BUSCAR"
+        />
       </Box>
 
       <Divider />
@@ -57,6 +63,9 @@ const InstituicaoCRUD: React.FC<{
               <>
                 <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => onEdit?.(inst)}>
                   <EditIcon />
+                </IconButton>
+                <IconButton edge="end" aria-label="merge" sx={{ mr: 1 }} onClick={() => onMerge?.(inst)}>
+                  <MergeIcon />
                 </IconButton>
                 <IconButton edge="end" aria-label="delete" onClick={() => onDelete(inst.id)}>
                   <DeleteIcon />
@@ -75,26 +84,22 @@ const InstituicaoCRUD: React.FC<{
 // Presentational: CursoCRUD
 const CursoCRUD: React.FC<{
   courses: Course[];
-  institutions: Instituicao[];
   loading: boolean;
   onDelete: (id: number) => Promise<void>;
-  onSearch: (institutionId?: number | '', q?: string) => Promise<void>;
+  onSearch: (options: SearchOptions) => Promise<void>;
   onEdit?: (course: Course) => void;
-}> = ({ courses, institutions, loading, onDelete, onSearch, onEdit }) => {
-  const [query, setQuery] = useState('');
-  const [selectedInstitution, setSelectedInstitution] = useState<number | ''>('');
-
+  onMerge?: (course: Course) => void;
+}> = ({ courses, loading, onDelete, onSearch, onEdit, onMerge }) => {
   return (
     <Box>
       <Typography variant="h6" gutterBottom>Cursos</Typography>
 
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-        <TextField placeholder="Buscar cursos" value={query} onChange={(e) => setQuery(e.target.value)} sx={{ flex: 1 }} />
-        <TextField select SelectProps={{ native: true }} value={selectedInstitution} onChange={(e) => setSelectedInstitution(e.target.value ? Number(e.target.value) : '')} sx={{ width: 320 }}>
-          <option value="">Todas Instituições</option>
-          {institutions.map(i => <option key={i.id} value={i.id}>{i.nome}</option>)}
-        </TextField>
-        <FilterActions onSearch={() => onSearch(selectedInstitution, query)} onClear={() => { setQuery(''); setSelectedInstitution(''); onSearch(); }} searching={loading} searchLabel="BUSCAR" />
+      <Box sx={{ mb: 2 }}>
+        <ReportFilters
+          onSearch={onSearch}
+          onClear={() => onSearch({})}
+          loading={loading}
+        />
       </Box>
 
       <Divider />
@@ -106,6 +111,9 @@ const CursoCRUD: React.FC<{
               <>
                 <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => onEdit?.(course)}>
                   <EditIcon />
+                </IconButton>
+                <IconButton edge="end" aria-label="merge" sx={{ mr: 1 }} onClick={() => onMerge?.(course)}>
+                  <MergeIcon />
                 </IconButton>
                 <IconButton edge="end" aria-label="delete" onClick={() => onDelete(course.id)}>
                   <DeleteIcon />
@@ -127,6 +135,9 @@ const InstitutionCourseManagement: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+  const [sourceEntity, setSourceEntity] = useState<Instituicao | Course | null>(null);
+  const [entityType, setEntityType] = useState<'institution' | 'course'>('institution');
 
   const { showNotification } = useNotification();
 
@@ -137,7 +148,7 @@ const InstitutionCourseManagement: React.FC = () => {
   const fetchInstitutions = async (q?: string) => {
     setLoadingInstitutions(true);
     try {
-      const res = await api.get(`/entities/institutions${q ? `?q=${q}` : ''}`);
+      const res = await api.get(`/institutions${q ? `?q=${q}` : ''}`);
       setInstitutions(res.data || []);
     } catch (err) {
       showNotification('Erro ao buscar instituições', 'error');
@@ -145,17 +156,17 @@ const InstitutionCourseManagement: React.FC = () => {
     setLoadingInstitutions(false);
   };
 
-  const fetchCourses = async (institutionId?: number | '', q?: string) => {
+  const fetchCourses = async (options: SearchOptions) => {
     setLoadingCourses(true);
     try {
       const params = new URLSearchParams();
-      if (institutionId) {
-        params.append('institutionId', String(institutionId));
+      if (options.institutionId) {
+        params.append('institutionId', String(options.institutionId));
       }
-      if (q) {
-        params.append('q', q);
+      if (options.courseId) {
+        params.append('courseId', String(options.courseId));
       }
-      const res = await api.get(`/entities/courses?${params.toString()}`);
+      const res = await api.get(`/courses?${params.toString()}`);
       setCourses(res.data || []);
     } catch (err) {
       showNotification('Erro ao buscar cursos', 'error');
@@ -164,18 +175,51 @@ const InstitutionCourseManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchInstitutions();
-    fetchCourses();
+    const fetchData = async () => {
+      await fetchInstitutions();
+      await fetchCourses({});
+    };
+    fetchData();
   }, []);
 
   const deleteInstitution = async (id: number) => {
-    await api.delete(`/entities/institutions/${id}`);
-    await fetchInstitutions();
+    try {
+      await api.delete(`/institutions/${id}`);
+      await fetchInstitutions();
+      showNotification('Instituição desativada com sucesso!', 'success');
+    } catch (error: any) {
+      showNotification(error.response?.data?.message || 'Erro ao desativar instituição', 'error');
+    }
   };
 
   const deleteCourse = async (id: number) => {
-    await api.delete(`/entities/courses/${id}`);
-    await fetchCourses();
+    try {
+      await api.delete(`/courses/${id}`);
+      await fetchCourses({});
+      showNotification('Curso desativado com sucesso!', 'success');
+    } catch (error: any) {
+      showNotification(error.response?.data?.message || 'Erro ao desativar curso', 'error');
+    }
+  };
+
+  const handleMerge = async (sourceId: number, destinationId: number) => {
+    try {
+      await api.post(`/${entityType}s/merge`, { sourceId, destinationId });
+      if (entityType === 'institution') {
+        await fetchInstitutions();
+      } else {
+        await fetchCourses({});
+      }
+      showNotification('Entidades mescladas com sucesso!', 'success');
+    } catch (error: any) {
+      showNotification(error.response?.data?.message || 'Erro ao mesclar entidades', 'error');
+    }
+  };
+
+  const openMergeModal = (entity: Instituicao | Course, type: 'institution' | 'course') => {
+    setSourceEntity(entity);
+    setEntityType(type);
+    setIsMergeModalOpen(true);
   };
 
   const [institutionToEdit, setInstitutionToEdit] = useState<Instituicao | null>(null);
@@ -203,6 +247,13 @@ const InstitutionCourseManagement: React.FC = () => {
         onClose={() => setCourseToEdit(null)}
         onCourseUpdated={handleCourseUpdated}
       />
+      <MergeModal
+        open={isMergeModalOpen}
+        onClose={() => setIsMergeModalOpen(false)}
+        sourceEntity={sourceEntity}
+        entityType={entityType}
+        onMerge={handleMerge}
+      />
       <Typography variant="h4" component="h1" gutterBottom>
         Gerenciamento de Entidades
       </Typography>
@@ -223,16 +274,17 @@ const InstitutionCourseManagement: React.FC = () => {
               onDelete={deleteInstitution}
               onSearch={(q) => fetchInstitutions(q)}
               onEdit={(inst) => setInstitutionToEdit(inst)}
+              onMerge={(inst) => openMergeModal(inst, 'institution')}
             />
           )}
           {tabIndex === 1 && (
             <CursoCRUD
               courses={courses}
-              institutions={institutions}
               loading={loadingCourses}
               onDelete={deleteCourse}
-              onSearch={(instId, q) => fetchCourses(instId, q)}
+              onSearch={(options) => fetchCourses(options)}
               onEdit={(course) => setCourseToEdit(course)}
+              onMerge={(course) => openMergeModal(course, 'course')}
             />
           )}
         </Box>

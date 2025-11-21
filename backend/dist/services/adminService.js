@@ -58,7 +58,7 @@ const getAdminReportData = (filters) => __awaiter(void 0, void 0, void 0, functi
     }));
     // Chamar o script Python para análise avançada
     const pythonAnalysis = yield new Promise((resolve, reject) => {
-        const pythonProcess = (0, child_process_1.spawn)('py', ['./python_scripts/analyze_evaluations.py'], {
+        const pythonProcess = (0, child_process_1.spawn)('C:\\Users\\GuilhermeOrbolato\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', ['./python_scripts/analyze_evaluations.py'], {
             cwd: __dirname + '/../../',
         });
         let pythonOutput = '';
@@ -125,7 +125,7 @@ const generateReports = () => __awaiter(void 0, void 0, void 0, function* () {
     }
     // Se houver avaliações, prossegue com a análise Python
     return new Promise((resolve, reject) => {
-        const pythonProcess = (0, child_process_1.spawn)('py', ['./python_scripts/analyze_evaluations.py'], {
+        const pythonProcess = (0, child_process_1.spawn)('C:\\Users\\GuilhermeOrbolato\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', ['./python_scripts/analyze_evaluations.py'], {
             cwd: __dirname + '/../../',
         });
         let pythonOutput = '';

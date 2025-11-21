@@ -24,6 +24,7 @@ interface AnalysisOptions {
   currentEnd?: string;
   previousStart?: string;
   previousEnd?: string;
+  courseId?: string;
 }
 
 export const generatePdfReport = async (
@@ -74,7 +75,7 @@ export const generateAnalysisForInstitution = async (
   options: AnalysisOptions = {}
 ): Promise<AnalysisResult> => {
   
-  const fetchEvaluations = async (startDate?: string, endDate?: string): Promise<RowDataPacket[]> => {
+  const fetchEvaluations = async (startDate?: string, endDate?: string, courseId?: string): Promise<RowDataPacket[]> => {
     let query = 'SELECT * FROM Avaliacoes WHERE instituicao_id = ?';
     const params: (string | number)[] = [institutionId];
 
@@ -82,12 +83,17 @@ export const generateAnalysisForInstitution = async (
       query += ' AND criado_em BETWEEN ? AND ?';
       params.push(startDate, endDate);
     }
+
+    if (courseId) {
+      query += ' AND curso_id = ?';
+      params.push(courseId);
+    }
     
     const [evaluations] = await pool.query<RowDataPacket[]>(query, params);
     return evaluations;
   };
 
-  const currentEvaluations = await fetchEvaluations(options.currentStart, options.currentEnd);
+  const currentEvaluations = await fetchEvaluations(options.currentStart, options.currentEnd, options.courseId);
   
   if (currentEvaluations.length === 0) {
     return {
@@ -102,7 +108,7 @@ export const generateAnalysisForInstitution = async (
     };
   }
 
-  const previousEvaluations = await fetchEvaluations(options.previousStart, options.previousEnd);
+  const previousEvaluations = await fetchEvaluations(options.previousStart, options.previousEnd, options.courseId);
 
   // NEW: Filter to keep only the latest evaluation per user for analysis
   const filterLatestEvaluationPerUser = (evaluations: RowDataPacket[]): RowDataPacket[] => {

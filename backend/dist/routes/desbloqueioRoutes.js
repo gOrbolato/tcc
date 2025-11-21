@@ -5,6 +5,7 @@ const desbloqueioController_1 = require("../controllers/desbloqueioController");
 const authMiddleware_1 = require("../middlewares/authMiddleware");
 const isAdmin_1 = require("../middlewares/isAdmin");
 const router = (0, express_1.Router)();
+router.get('/count', authMiddleware_1.authenticate, isAdmin_1.isAdmin, desbloqueioController_1.getPendingDesbloqueioCount);
 router.get('/', authMiddleware_1.authenticate, isAdmin_1.isAdmin, desbloqueioController_1.getPendingDesbloqueios);
 router.post('/:id/approve', authMiddleware_1.authenticate, isAdmin_1.isAdmin, desbloqueioController_1.approveDesbloqueio);
 router.post('/:id/reject', authMiddleware_1.authenticate, isAdmin_1.isAdmin, desbloqueioController_1.rejectDesbloqueio);

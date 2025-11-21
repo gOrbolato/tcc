@@ -47,7 +47,7 @@ const analysisService = __importStar(require("../services/analysisService"));
 const getInstitutionAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const { currentStart, currentEnd, previousStart, previousEnd } = req.query;
+        const { currentStart, currentEnd, previousStart, previousEnd, courseId, } = req.query;
         if (!id) {
             return res.status(400).json({ message: 'O ID da instituição é obrigatório.' });
         }
@@ -56,6 +56,7 @@ const getInstitutionAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, f
             currentEnd: currentEnd,
             previousStart: previousStart,
             previousEnd: previousEnd,
+            courseId: courseId,
         };
         const analysisResult = yield analysisService.generateAnalysisForInstitution(Number(id), options);
         res.status(200).json(analysisResult);

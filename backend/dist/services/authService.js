@@ -41,7 +41,9 @@ const sendEmail = (to, subject, text) => __awaiter(void 0, void 0, void 0, funct
 });
 const register = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     console.log('--- INICIANDO PROCESSO DE REGISTRO ---');
-    const { nome, cpf, ra, email, senha, instituicao_id, curso_id, institutionText, courseText, periodo, semestre, previsaoTermino, } = userData;
+    const { nome, cpf, ra, email, senha, institutionId, courseId, institutionText, courseText, periodo, semestre, previsaoTermino, institutionCity, // Novo campo
+    institutionState, // Novo campo
+     } = userData;
     // Verificações básicas
     if (!nome || !email || !senha || !ra) {
         throw new Error('Campos obrigatórios ausentes.');
@@ -58,8 +60,8 @@ const register = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     // Hash da senha
     const hashedPassword = yield bcrypt_1.default.hash(senha, 10);
     // Resolver instituição e curso: se institutionText/courseText fornecidos, tentar encontrar por nome ou criar
-    let finalInstituicaoId = instituicao_id;
-    let finalCursoId = curso_id;
+    let finalInstituicaoId = institutionId;
+    let finalCursoId = courseId;
     // Normalização simples: trim, collapse múltiplos espaços
     const normalize = (s) => {
         if (!s && s !== '')
@@ -68,6 +70,8 @@ const register = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     };
     const institutionTextNorm = normalize(institutionText);
     const courseTextNorm = normalize(courseText);
+    const institutionCityNorm = normalize(institutionCity);
+    const institutionStateNorm = normalize(institutionState);
     // Logic for Institution
     if (!finalInstituicaoId && institutionTextNorm) {
         let institutionId = null;
@@ -79,11 +83,15 @@ const register = (userData) => __awaiter(void 0, void 0, void 0, function* () {
         else {
             // 2. If not found, create it
             try {
-                const [insertInst] = yield database_1.default.query('INSERT INTO Instituicoes (nome, is_active) VALUES (?, TRUE)', [institutionTextNorm]);
+                const [insertInst] = yield database_1.default.query('INSERT INTO Instituicoes (nome, cidade, estado, is_active) VALUES (?, ?, ?, TRUE)', [institutionTextNorm, institutionCityNorm, institutionStateNorm]);
                 if (insertInst.insertId) {
                     institutionId = insertInst.insertId;
                     // Optional: log the auto-creation
-                    yield (0, autoEntityService_1.logAutoCreatedEntity)('instituicao', institutionTextNorm, email, { createdId: institutionId }).catch(e => console.error("Logging failed", e));
+                    yield (0, autoEntityService_1.logAutoCreatedEntity)('instituicao', institutionTextNorm, email, {
+                        createdId: institutionId,
+                        cidade: institutionCityNorm,
+                        estado: institutionStateNorm
+                    }).catch(e => console.error("Logging failed", e));
                 }
             }
             catch (error) {
@@ -235,7 +243,8 @@ const validateUnlockCode = (cpf, code) => __awaiter(void 0, void 0, void 0, func
     }
     const desbloqueio = desbloqueioRows[0];
     // 3. Validar o código
-    if (!desbloqueio.verification_code || desbloqueio.verification_code !== code) {
+    const isCodeValid = yield bcrypt_1.default.compare(code, desbloqueio.verification_code);
+    if (!desbloqueio.verification_code || !isCodeValid) {
         throw new Error('Código de verificação inválido.');
     }
     // 4. Checar a data de expiração

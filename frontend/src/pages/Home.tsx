@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Container, Typography, Paper, Avatar, IconButton, TextField, Button } from '@mui/material';
+import { Box, Container, Typography, Paper, Avatar, IconButton, TextField, Button, CircularProgress, List, ListItemButton, ListItemText, Divider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Toolbar } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import SearchIcon from '@mui/icons-material/Search';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { motion, AnimatePresence } from 'framer-motion';
 import carousel1 from '../assets/images/imagem-carrossel1.png';
 import carousel2 from '../assets/images/imagem-carrossel2.png';
-
 import GeolocationConsentModal from '../components/GeolocationConsentModal';
+import api from '../services/api';
 import guilhermeOrbolatoImg from '../assets/images/guilhermeOrbolato.jpg';
 import felipeNakanoImg from '../assets/images/felipeNakano.jpeg';
 
@@ -18,44 +20,136 @@ const sectionVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 };
 
+const howItWorksItems = [
+  {
+    icon: <SearchIcon fontSize="large" />,
+    title: 'Pesquise Avaliações',
+    description: 'Utilize nossa barra de pesquisa para encontrar avaliações sobre instituições, cursos e localidades de forma livre e gratuita.'
+  },
+  {
+    icon: <EditNoteIcon fontSize="large" />,
+    title: 'Contribua Anonimamente',
+    description: 'Crie sua conta para responder aos questionários. Sua identidade é 100% preservada para que você se expresse livremente.'
+  },
+  {
+    icon: <TrendingUpIcon fontSize="large" />,
+    title: 'Gere Melhorias',
+    description: 'As avaliações são compiladas e analisadas pela administração para identificar pontos de melhoria e implementar mudanças efetivas.'
+  }
+];
+
 type GeoConsentStatus = 'prompt' | 'granted' | 'denied';
+
+interface Institution {
+  id: number;
+  nome: string;
+  media_avaliacoes: number | null;
+}
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isGeoModalOpen, setGeoModalOpen] = useState(false);
   const [geoConsentStatus, setGeoConsentStatus] = useState<GeoConsentStatus>('prompt');
+  const [searchResults, setSearchResults] = useState<Institution[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [noResults, setNoResults] = useState<boolean>(false);
+  const [isGeoSearching, setIsGeoSearching] = useState<boolean>(false); // Novo estado
 
+  // Função unificada para realizar a busca por geolocalização
+  const performGeoSearch = () => {
+    if (!navigator.geolocation) {
+      console.error("Geolocalização não é suportada por este navegador.");
+      return;
+    }
+    
+    setIsGeoSearching(true); // Inicia a busca por geolocalização
+    setSearchQuery(''); // Limpa a barra de pesquisa
+    setLoading(true); // Ativa o spinner de carregamento
+    setNoResults(false);
+    setSearchResults([]);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        handleSearchSubmit(undefined, { lat: position.coords.latitude, lon: position.coords.longitude });
+      },
+      (error) => {
+        console.error("Erro ao obter localização:", error);
+        // Poderia mostrar um snackbar/alerta de erro para o usuário
+        setLoading(false); // Desativa o spinner em caso de erro
+        setIsGeoSearching(false); // Finaliza a busca por geolocalização
+        setNoResults(true); // Indica que não houve resultados ou houve erro
+      }
+    );
+  };
+
+  // Efeito para carregar o status de consentimento e buscar automaticamente se já permitido
   useEffect(() => {
     const savedStatus = localStorage.getItem('geo_consent_status') as GeoConsentStatus | null;
     if (savedStatus) {
       setGeoConsentStatus(savedStatus);
+      if (savedStatus === 'granted') {
+        performGeoSearch();
+      }
     }
-  }, []);
+  }, []); // Array vazio para executar apenas na montagem do componente
 
-  const handleSearchSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?query=${encodeURIComponent(searchQuery.trim())}`);
+  // Efeito para fazer a mensagem "Nenhum resultado" desaparecer após um tempo
+  useEffect(() => {
+    if (noResults) {
+      const timer = setTimeout(() => {
+        setNoResults(false);
+      }, 5000); // 5 segundos
+
+      return () => clearTimeout(timer); // Limpa o timer se o componente for desmontado
+    }
+  }, [noResults]);
+
+  const handleSearchSubmit = async (event?: React.FormEvent, coords?: { lat: number; lon: number }) => {
+    if (event) event.preventDefault();
+    
+    const query = coords ? '' : searchQuery.trim();
+    if (!query && !coords && !isGeoSearching) return; // Adicionado !isGeoSearching
+
+    setLoading(true);
+    setNoResults(false);
+    setSearchResults([]);
+
+    try {
+      let url = '/institutions';
+      const params: any = {};
+
+      if (coords) {
+        url = `/institutions/nearby`;
+        params.lat = coords.lat;
+        params.lon = coords.lon;
+      } else {
+        params.q = query;
+      }
+      
+      const response = await api.get(url, { params });
+      const data: Institution[] = response.data;
+      
+      if (data.length === 0) {
+        setNoResults(true);
+      } else {
+        setSearchResults(data);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar instituições:', error);
+      setNoResults(true);
+    } finally {
+      setLoading(false);
+      setIsGeoSearching(false); // Finaliza a busca por geolocalização
     }
   };
 
+  // Usuário permite a geolocalização através do modal
   const handleAllowGeo = () => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        console.log('Lat:', position.coords.latitude, 'Lon:', position.coords.longitude);
-        setSearchQuery('Usando minha localização...');
-        localStorage.setItem('geo_consent_status', 'granted');
-        setGeoConsentStatus('granted');
-        setGeoModalOpen(false);
-      },
-      (error) => {
-        console.error("Erro ao obter localização:", error);
-        localStorage.setItem('geo_consent_status', 'denied');
-        setGeoConsentStatus('denied');
-        setGeoModalOpen(false);
-      }
-    );
+    localStorage.setItem('geo_consent_status', 'granted');
+    setGeoConsentStatus('granted');
+    setGeoModalOpen(false);
+    performGeoSearch();
   };
 
   const handleDenyGeo = () => {
@@ -64,13 +158,12 @@ const Home: React.FC = () => {
     setGeoModalOpen(false);
   };
 
+  // Clique no ícone de geolocalização
   const handleGeoIconClick = () => {
-    if (geoConsentStatus === 'prompt') {
+    if (geoConsentStatus === 'granted') {
+      performGeoSearch();
+    } else {
       setGeoModalOpen(true);
-    } else if (geoConsentStatus === 'denied') {
-      setGeoModalOpen(true); 
-    } else if (geoConsentStatus === 'granted') {
-      handleAllowGeo();
     }
   };
 
@@ -93,33 +186,118 @@ const Home: React.FC = () => {
             <Box
               component="form"
               onSubmit={handleSearchSubmit}
-              sx={{ display: 'flex', gap: 1, alignItems: 'center', maxWidth: 'md', mx: 'auto' }}
+              sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', maxWidth: 'lg', mx: 'auto', py: 4 }}
             >
               <TextField
-                fullWidth
                 variant="outlined"
                 placeholder="Pesquisar por instituição, curso ou cidade..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  sx: {
-                    borderRadius: '50px',
+                sx={{
+                  flex: '1 1 500px',
+                  maxWidth: '600px',
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
                     bgcolor: 'white',
                     color: 'text.primary',
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderWidth: '2px' },
-                  }
+                  },
                 }}
               />
-              <IconButton onClick={handleGeoIconClick} sx={{ bgcolor: 'white', color: geoConsentStatus === 'granted' ? 'primary.main' : 'action.disabled', '&:hover': { bgcolor: '#f0f0f0' } }}>
-                <MyLocationIcon />
-              </IconButton>
-              <Button type="submit" variant="contained" sx={{ borderRadius: '50px', px: 4, py: '15px' }}>
-                <SearchIcon />
+              <Button
+                variant="outlined"
+                startIcon={<MyLocationIcon />}
+                onClick={handleGeoIconClick}
+                sx={{
+                  py: '15px',
+                  px: 3,
+                  borderRadius: '8px',
+                  bgcolor: 'rgba(255, 255, 255, 0.9)',
+                  color: 'primary.main',
+                  borderColor: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'white',
+                    borderColor: 'primary.dark',
+                  }
+                }}
+              >
+                Perto de mim
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                sx={{ py: '15px', px: 5, borderRadius: '8px' }}
+              >
+                Buscar
               </Button>
             </Box>
           </motion.div>
         </Container>
       </Box>
+
+      {/* Search Results */}
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        {isGeoSearching && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4 }}>
+            <CircularProgress sx={{ mb: 2 }} />
+            <Typography textAlign="center">Buscando instituições perto de você...</Typography>
+          </Box>
+        )}
+        {loading && !isGeoSearching && ( // Mostra o spinner apenas para busca normal
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
+        {noResults && !loading && !isGeoSearching && ( // Mostra "Nenhum resultado" apenas se não estiver carregando ou buscando geo
+          <Typography textAlign="center" sx={{ my: 4 }}>
+            Nenhum resultado encontrado para sua busca.
+          </Typography>
+        )}
+        {searchResults.length > 0 && (
+          <Paper elevation={3} sx={{ borderRadius: 1, overflow: 'hidden' }}>
+            <Toolbar
+              sx={{
+                pl: { sm: 2 },
+                pr: { xs: 1, sm: 1 },
+                bgcolor: (theme) => theme.palette.grey[100], // Usar um cinza claro para o fundo
+              }}
+            >
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                Resultados da Busca
+              </Typography>
+            </Toolbar>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Instituição</TableCell>
+                    <TableCell align="right">Nota Média</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {searchResults.map((institution) => (
+                    <TableRow
+                      key={institution.id}
+                      hover
+                      onClick={() => navigate(`/institutions/${institution.id}`)}
+                      sx={{ cursor: 'pointer' }}
+                    >
+                      <TableCell component="th" scope="row">
+                        {institution.nome}
+                      </TableCell>
+                      <TableCell align="right">
+                        {typeof institution.media_avaliacoes === 'number' 
+                          ? institution.media_avaliacoes.toFixed(1) 
+                          : 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        )}
+      </Container>
 
       {/* Geolocation Modal */}
       <GeolocationConsentModal 
@@ -136,11 +314,25 @@ const Home: React.FC = () => {
             Como Funciona?
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 4 }}>
-            {[...Array(3)].map((_, index) => (
+            {howItWorksItems.map((item, index) => (
               <motion.div key={index} whileHover={{ y: -8 }}>
-                <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-                  <Typography variant="h6" fontWeight={600}>{['1. Pesquise Avaliações', '2. Contribua Anonimamente', '3. Gere Melhorias'][index]}</Typography>
-                  <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>{['Utilize nossa barra de pesquisa para encontrar avaliações sobre instituições, cursos e localidades de forma livre e gratuita.', 'Crie sua conta para responder aos questionários. Sua identidade é 100% preservada para que você se expresse livremente.', 'As avaliações são compiladas e analisadas pela administração para identificar pontos de melhoria e implementar mudanças efetivas.'][index]}</Typography>
+                <Paper elevation={3} sx={{ p: 4, borderRadius: 3, textAlign: 'center' }}>
+                  <Box sx={{
+                    mb: 2,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.light',
+                    color: 'primary.main',
+                    mx: 'auto'
+                  }}>
+                    {item.icon}
+                  </Box>
+                  <Typography variant="h6" fontWeight={600}>{item.title}</Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>{item.description}</Typography>
                 </Paper>
               </motion.div>
             ))}
