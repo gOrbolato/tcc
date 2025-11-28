@@ -1,12 +1,15 @@
+// Importa React, componentes do Material-UI e ícones.
 import React from 'react';
 import { Box, Typography, CircularProgress, Paper } from '@mui/material';
 import { ArrowUpward, ArrowDownward, Remove } from '@mui/icons-material';
 
+// Interface para um valor que possui uma tendência (valor atual e variação).
 interface TrendValue {
   value: number;
   delta: number | null;
 }
 
+// Interface para as propriedades do componente de resumo.
 interface ReportSummaryProps {
   data: {
     total_evaluations: TrendValue;
@@ -15,7 +18,12 @@ interface ReportSummaryProps {
   loading: boolean;
 }
 
-// Componente para renderizar a variação (delta)
+/**
+ * @component TrendDelta
+ * @description Um componente visual para exibir a variação de um valor.
+ * Mostra uma seta para cima para valores positivos, para baixo para negativos,
+ * e um ícone neutro se não houver alteração.
+ */
 const TrendDelta: React.FC<{ delta: number | null, isPercentage?: boolean }> = ({ delta, isPercentage = false }) => {
   if (delta === null || delta === 0) {
     return (
@@ -40,9 +48,12 @@ const TrendDelta: React.FC<{ delta: number | null, isPercentage?: boolean }> = (
   );
 };
 
-
+/**
+ * @component ReportSummary
+ * @description Exibe um resumo dos principais indicadores do relatório, como o total de
+ * avaliações e a média final geral, incluindo a tendência de cada um.
+ */
 const ReportSummary: React.FC<ReportSummaryProps> = ({ data, loading }) => {
-  console.log('--- DEBUG: ReportSummary data prop ---', JSON.stringify(data, null, 2));
   return (
     <Paper sx={{ p: 3, height: '100%' }} elevation={3}>
       <Typography variant="h6" gutterBottom>Resumo Geral</Typography>
@@ -51,6 +62,7 @@ const ReportSummary: React.FC<ReportSummaryProps> = ({ data, loading }) => {
           <CircularProgress />
         ) : data ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Total de Avaliações */}
             <Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                 {data.total_evaluations.value}
@@ -60,6 +72,7 @@ const ReportSummary: React.FC<ReportSummaryProps> = ({ data, loading }) => {
                 <TrendDelta delta={data.total_evaluations.delta} />
               </Box>
             </Box>
+            {/* Média Final Geral */}
             <Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                 {data.average_media_final.value.toFixed(2)}

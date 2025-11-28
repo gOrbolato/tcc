@@ -1,23 +1,10 @@
+// Importa React, hooks, componentes do Material-UI e ícones.
 import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Typography,
-  Tabs,
-  Tab,
-  Box,
-  TextField,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  Paper,
-  Divider,
-  CircularProgress,
-} from '@mui/material';
+import { Container, Typography, Tabs, Tab, Box, TextField, Button, List, ListItem, ListItemText, IconButton, Paper, Divider, CircularProgress } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MergeIcon from '@mui/icons-material/Merge';
+// Importa utilitários e componentes customizados.
 import api from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 import GenericSearchFilter from './admin/reports/components/GenericSearchFilter';
@@ -27,11 +14,10 @@ import EditCourseModal from './admin/components/EditCourseModal';
 import MergeModal from './admin/components/MergeModal';
 import type { Course } from '../types/course';
 
-// Types
+// Tipos locais.
 interface Instituicao { id: number; nome: string; }
 
-
-// Presentational: InstituicaoCRUD
+// Componente Presentational para o CRUD de Instituições.
 const InstituicaoCRUD: React.FC<{
   institutions: Instituicao[];
   loading: boolean;
@@ -43,35 +29,21 @@ const InstituicaoCRUD: React.FC<{
   return (
     <Box>
       <Typography variant="h6" gutterBottom>Instituições</Typography>
-
       <Box sx={{ mb: 2 }}>
-        <GenericSearchFilter
-          onSearch={(q) => onSearch(q)}
-          onClear={() => onSearch('')}
-          loading={loading}
-          placeholder="Buscar instituições"
-          searchLabel="BUSCAR"
-        />
+        <GenericSearchFilter onSearch={onSearch} onClear={() => onSearch('')} loading={loading} placeholder="Buscar instituições" searchLabel="BUSCAR" />
       </Box>
-
       <Divider />
       <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Instituições Existentes</Typography>
       {loading ? <CircularProgress /> : (
         <List>
           {institutions.map(inst => (
-            <ListItem key={inst.id} secondaryAction={(
+            <ListItem key={inst.id} secondaryAction={
               <>
-                <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => onEdit?.(inst)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton edge="end" aria-label="merge" sx={{ mr: 1 }} onClick={() => onMerge?.(inst)}>
-                  <MergeIcon />
-                </IconButton>
-                <IconButton edge="end" aria-label="delete" onClick={() => onDelete(inst.id)}>
-                  <DeleteIcon />
-                </IconButton>
+                <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => onEdit?.(inst)}><EditIcon /></IconButton>
+                <IconButton edge="end" aria-label="merge" sx={{ mr: 1 }} onClick={() => onMerge?.(inst)}><MergeIcon /></IconButton>
+                <IconButton edge="end" aria-label="delete" onClick={() => onDelete(inst.id)}><DeleteIcon /></IconButton>
               </>
-            )}>
+            }>
               <ListItemText primary={inst.nome} />
             </ListItem>
           ))}
@@ -81,7 +53,7 @@ const InstituicaoCRUD: React.FC<{
   );
 };
 
-// Presentational: CursoCRUD
+// Componente Presentational para o CRUD de Cursos.
 const CursoCRUD: React.FC<{
   courses: Course[];
   loading: boolean;
@@ -93,33 +65,21 @@ const CursoCRUD: React.FC<{
   return (
     <Box>
       <Typography variant="h6" gutterBottom>Cursos</Typography>
-
       <Box sx={{ mb: 2 }}>
-        <ReportFilters
-          onSearch={onSearch}
-          onClear={() => onSearch({})}
-          loading={loading}
-        />
+        <ReportFilters onSearch={onSearch} onClear={() => onSearch({})} loading={loading} />
       </Box>
-
       <Divider />
       <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Cursos Existentes</Typography>
       {loading ? <CircularProgress /> : (
         <List>
           {courses.map(course => (
-            <ListItem key={course.id} secondaryAction={(
+            <ListItem key={course.id} secondaryAction={
               <>
-                <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => onEdit?.(course)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton edge="end" aria-label="merge" sx={{ mr: 1 }} onClick={() => onMerge?.(course)}>
-                  <MergeIcon />
-                </IconButton>
-                <IconButton edge="end" aria-label="delete" onClick={() => onDelete(course.id)}>
-                  <DeleteIcon />
-                </IconButton>
+                <IconButton edge="end" aria-label="edit" sx={{ mr: 1 }} onClick={() => onEdit?.(course)}><EditIcon /></IconButton>
+                <IconButton edge="end" aria-label="merge" sx={{ mr: 1 }} onClick={() => onMerge?.(course)}><MergeIcon /></IconButton>
+                <IconButton edge="end" aria-label="delete" onClick={() => onDelete(course.id)}><DeleteIcon /></IconButton>
               </>
-            )}>
+            }>
               <ListItemText primary={course.nome} />
             </ListItem>
           ))}
@@ -129,6 +89,11 @@ const CursoCRUD: React.FC<{
   );
 };
 
+/**
+ * @component InstitutionCourseManagement
+ * @description Página principal para o gerenciamento (CRUD) de instituições e cursos.
+ * Utiliza abas para separar as duas entidades e modais para as ações de edição e mesclagem.
+ */
 const InstitutionCourseManagement: React.FC = () => {
   const [tabIndex, setTabIndex] = useState(0);
   const [institutions, setInstitutions] = useState<Instituicao[]>([]);
@@ -138,13 +103,14 @@ const InstitutionCourseManagement: React.FC = () => {
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [sourceEntity, setSourceEntity] = useState<Instituicao | Course | null>(null);
   const [entityType, setEntityType] = useState<'institution' | 'course'>('institution');
+  const [institutionToEdit, setInstitutionToEdit] = useState<Instituicao | null>(null);
+  const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
 
   const { showNotification } = useNotification();
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabIndex(newValue);
-  };
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => setTabIndex(newValue);
 
+  // Funções para buscar dados da API.
   const fetchInstitutions = async (q?: string) => {
     setLoadingInstitutions(true);
     try {
@@ -160,12 +126,8 @@ const InstitutionCourseManagement: React.FC = () => {
     setLoadingCourses(true);
     try {
       const params = new URLSearchParams();
-      if (options.institutionId) {
-        params.append('institutionId', String(options.institutionId));
-      }
-      if (options.courseId) {
-        params.append('courseId', String(options.courseId));
-      }
+      if (options.institutionId) params.append('institutionId', String(options.institutionId));
+      if (options.courseId) params.append('courseId', String(options.courseId));
       const res = await api.get(`/courses?${params.toString()}`);
       setCourses(res.data || []);
     } catch (err) {
@@ -174,14 +136,13 @@ const InstitutionCourseManagement: React.FC = () => {
     setLoadingCourses(false);
   };
 
+  // Busca os dados iniciais ao montar o componente.
   useEffect(() => {
-    const fetchData = async () => {
-      await fetchInstitutions();
-      await fetchCourses({});
-    };
-    fetchData();
+    fetchInstitutions();
+    fetchCourses({});
   }, []);
 
+  // Funções de deleção.
   const deleteInstitution = async (id: number) => {
     try {
       await api.delete(`/institutions/${id}`);
@@ -202,62 +163,36 @@ const InstitutionCourseManagement: React.FC = () => {
     }
   };
 
+  // Função para mesclar entidades.
   const handleMerge = async (sourceId: number, destinationId: number) => {
     try {
       await api.post(`/${entityType}s/merge`, { sourceId, destinationId });
-      if (entityType === 'institution') {
-        await fetchInstitutions();
-      } else {
-        await fetchCourses({});
-      }
+      entityType === 'institution' ? await fetchInstitutions() : await fetchCourses({});
       showNotification('Entidades mescladas com sucesso!', 'success');
     } catch (error: any) {
       showNotification(error.response?.data?.message || 'Erro ao mesclar entidades', 'error');
     }
   };
-
+  
+  // Abre o modal de mesclagem.
   const openMergeModal = (entity: Instituicao | Course, type: 'institution' | 'course') => {
     setSourceEntity(entity);
     setEntityType(type);
     setIsMergeModalOpen(true);
   };
-
-  const [institutionToEdit, setInstitutionToEdit] = useState<Instituicao | null>(null);
-  const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
-
-  const handleInstitutionUpdated = (updatedInstitution: Instituicao) => {
-    setInstitutions(prev => prev.map(i => i.id === updatedInstitution.id ? updatedInstitution : i));
-  };
-
-  const handleCourseUpdated = (updatedCourse: Course) => {
-    setCourses(prev => prev.map(c => c.id === updatedCourse.id ? updatedCourse : c));
-  };
+  
+  // Funções de callback para atualizar a UI após edição.
+  const handleInstitutionUpdated = (updated: Instituicao) => setInstitutions(prev => prev.map(i => i.id === updated.id ? updated : i));
+  const handleCourseUpdated = (updated: Course) => setCourses(prev => prev.map(c => c.id === updated.id ? updated : c));
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <EditInstitutionModal
-        institution={institutionToEdit}
-        open={!!institutionToEdit}
-        onClose={() => setInstitutionToEdit(null)}
-        onInstitutionUpdated={handleInstitutionUpdated}
-      />
-      <EditCourseModal
-        course={courseToEdit}
-        open={!!courseToEdit}
-        onClose={() => setCourseToEdit(null)}
-        onCourseUpdated={handleCourseUpdated}
-      />
-      <MergeModal
-        open={isMergeModalOpen}
-        onClose={() => setIsMergeModalOpen(false)}
-        sourceEntity={sourceEntity}
-        entityType={entityType}
-        onMerge={handleMerge}
-      />
-      <Typography variant="h4" component="h1" gutterBottom>
-        Gerenciamento de Entidades
-      </Typography>
-
+      {/* Modais para edição e mesclagem */}
+      <EditInstitutionModal institution={institutionToEdit} open={!!institutionToEdit} onClose={() => setInstitutionToEdit(null)} onInstitutionUpdated={handleInstitutionUpdated} />
+      <EditCourseModal course={courseToEdit} open={!!courseToEdit} onClose={() => setCourseToEdit(null)} onCourseUpdated={handleCourseUpdated} />
+      <MergeModal open={isMergeModalOpen} onClose={() => setIsMergeModalOpen(false)} sourceEntity={sourceEntity} entityType={entityType} onMerge={handleMerge} />
+      
+      <Typography variant="h4" component="h1" gutterBottom>Gerenciamento de Entidades</Typography>
       <Paper elevation={3}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabIndex} onChange={handleChange} aria-label="Abas de Gerenciamento">
@@ -265,28 +200,9 @@ const InstitutionCourseManagement: React.FC = () => {
             <Tab label="Cursos" id="crud-tab-1" />
           </Tabs>
         </Box>
-
         <Box sx={{ p: 3 }}>
-          {tabIndex === 0 && (
-            <InstituicaoCRUD
-              institutions={institutions}
-              loading={loadingInstitutions}
-              onDelete={deleteInstitution}
-              onSearch={(q) => fetchInstitutions(q)}
-              onEdit={(inst) => setInstitutionToEdit(inst)}
-              onMerge={(inst) => openMergeModal(inst, 'institution')}
-            />
-          )}
-          {tabIndex === 1 && (
-            <CursoCRUD
-              courses={courses}
-              loading={loadingCourses}
-              onDelete={deleteCourse}
-              onSearch={(options) => fetchCourses(options)}
-              onEdit={(course) => setCourseToEdit(course)}
-              onMerge={(course) => openMergeModal(course, 'course')}
-            />
-          )}
+          {tabIndex === 0 && <InstituicaoCRUD institutions={institutions} loading={loadingInstitutions} onDelete={deleteInstitution} onSearch={fetchInstitutions} onEdit={setInstitutionToEdit} onMerge={(inst) => openMergeModal(inst, 'institution')} />}
+          {tabIndex === 1 && <CursoCRUD courses={courses} loading={loadingCourses} onDelete={deleteCourse} onSearch={fetchCourses} onEdit={setCourseToEdit} onMerge={(course) => openMergeModal(course, 'course')} />}
         </Box>
       </Paper>
     </Container>

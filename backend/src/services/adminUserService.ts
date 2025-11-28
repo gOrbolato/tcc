@@ -1,16 +1,24 @@
+// Importa a pool de conexões do banco de dados.
 import pool from '../config/database';
+// Importa os tipos RowDataPacket e OkPacket do mysql2 para tipar os resultados das queries.
 import { RowDataPacket, OkPacket } from 'mysql2';
 
+// Interface para os filtros de busca de usuários.
 interface UserFilters {
   ra?: string;
-  q?: string;
+  q?: string; // Termo de busca geral para nome ou email.
   institutionId?: string;
   courseId?: string;
   anonymizedId?: string;
 }
 
-export const getFilteredUsers = async (filters: UserFilters) => {
-  // Select user fields plus institution/curso names and average rating
+/**
+ * @function getFilteredUsers
+ * @description Busca e retorna uma lista de usuários com base em filtros, incluindo informações adicionais como nome da instituição, nome do curso e média de avaliações.
+ * @param {UserFilters} filters - Os filtros para a busca de usuários.
+ * @returns {Promise<RowDataPacket[]>} - Uma promessa que resolve para um array de usuários que correspondem aos filtros.
+ */
+export const getFilteredUsers = async (filters: UserFilters): Promise<RowDataPacket[]> => {
   let query = `
     SELECT 
       u.id, u.nome, u.email, u.ra, u.is_active, u.instituicao_id, u.curso_id, u.anonymized_id,
@@ -50,7 +58,14 @@ export const getFilteredUsers = async (filters: UserFilters) => {
   return users;
 };
 
-export const deleteUser = async (userId: number) => {
+/**
+ * @function deleteUser
+ * @description Remove um usuário do banco de dados.
+ * @param {number} userId - O ID do usuário a ser removido.
+ * @returns {Promise<void>}
+ * @throws {Error} Se o usuário não for encontrado.
+ */
+export const deleteUser = async (userId: number): Promise<void> => {
   const [result] = await pool.query<OkPacket>('DELETE FROM Usuarios WHERE id = ?', [userId]);
   if (result.affectedRows === 0) {
     throw new Error('Usuário não encontrado.');

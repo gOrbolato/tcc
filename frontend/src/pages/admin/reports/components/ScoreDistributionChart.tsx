@@ -1,24 +1,33 @@
+// Importa React, hooks e componentes do Material-UI.
 import React from 'react';
 import { Box, Typography, CircularProgress, Paper, useTheme } from '@mui/material';
+// Importa os componentes do Chart.js para criar o gráfico.
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
-// Registrar os componentes necessários para um gráfico de barras
+// Registra os módulos do Chart.js necessários para um gráfico de barras.
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+// Interface para as propriedades do componente.
 interface ScoreDistributionChartProps {
-  data: { [key: string]: number } | null;
+  data: { [key: string]: number } | null; // Dados: um objeto onde a chave é a nota (1 a 5) e o valor é a quantidade de votos.
   loading: boolean;
 }
 
+/**
+ * @component ScoreDistributionChart
+ * @description Renderiza um gráfico de barras verticais que mostra a distribuição
+ * das notas (quantas avaliações receberam 1 estrela, 2 estrelas, etc.).
+ */
 const ScoreDistributionChart: React.FC<ScoreDistributionChartProps> = ({ data, loading }) => {
   const theme = useTheme();
 
   const labels = ['1 Estrela', '2 Estrelas', '3 Estrelas', '4 Estrelas', '5 Estrelas'];
   
-  // Mapeia os dados garantindo a ordem e tratando valores ausentes
-  const chartValues = data ? labels.map((label, index) => data[String(index + 1)] || 0) : [];
+  // Mapeia os dados para garantir a ordem correta (1 a 5) e lida com valores ausentes.
+  const chartValues = data ? labels.map((_label, index) => data[String(index + 1)] || 0) : [];
 
+  // Define cores para cada barra com base na nota.
   const backgroundColors = [
     theme.palette.error.main,
     theme.palette.error.light,
@@ -26,7 +35,6 @@ const ScoreDistributionChart: React.FC<ScoreDistributionChartProps> = ({ data, l
     theme.palette.success.light,
     theme.palette.success.main,
   ];
-
   const borderColors = [
     theme.palette.error.dark,
     theme.palette.error.main,
@@ -35,6 +43,7 @@ const ScoreDistributionChart: React.FC<ScoreDistributionChartProps> = ({ data, l
     theme.palette.success.dark,
   ];
 
+  // Estrutura de dados para o Chart.js.
   const chartData = {
     labels,
     datasets: [
@@ -49,27 +58,19 @@ const ScoreDistributionChart: React.FC<ScoreDistributionChartProps> = ({ data, l
     ],
   };
 
+  // Opções de configuração para o gráfico.
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false,
-      },
+      legend: { display: false },
       title: {
         display: true,
         text: 'Distribuição Geral das Notas',
         color: theme.palette.text.primary,
-        font: {
-          size: 16,
-        },
+        font: { size: 16 },
       },
       tooltip: {
-        backgroundColor: theme.palette.background.paper,
-        titleColor: theme.palette.text.primary,
-        bodyColor: theme.palette.text.secondary,
-        borderColor: theme.palette.divider,
-        borderWidth: 1,
         callbacks: {
           label: (context: any) => `${context.raw} votos`,
         },
@@ -78,12 +79,10 @@ const ScoreDistributionChart: React.FC<ScoreDistributionChartProps> = ({ data, l
     scales: {
       y: {
         beginAtZero: true,
-        grid: {
-          color: theme.palette.divider,
-        },
+        grid: { color: theme.palette.divider },
         ticks: {
           color: theme.palette.text.secondary,
-          stepSize: 1, // Garante que o eixo Y mostre apenas números inteiros
+          stepSize: 1, // Garante que o eixo Y mostre apenas números inteiros.
         },
         title: {
           display: true,
@@ -92,12 +91,8 @@ const ScoreDistributionChart: React.FC<ScoreDistributionChartProps> = ({ data, l
         },
       },
       x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: theme.palette.text.primary,
-        },
+        grid: { display: false },
+        ticks: { color: theme.palette.text.primary },
       },
     },
   };

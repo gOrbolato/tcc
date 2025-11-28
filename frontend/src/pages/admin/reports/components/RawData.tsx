@@ -1,6 +1,8 @@
+// Importa React e componentes do Material-UI.
 import React from 'react';
 import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
 
+// Interface para a estrutura de uma avaliação individual.
 interface Evaluation {
   id: number;
   comentario_geral: string;
@@ -8,11 +10,17 @@ interface Evaluation {
   criado_em: string;
 }
 
+// Interface para as propriedades do componente.
 interface RawDataProps {
-  data: Evaluation[] | null;
-  loading: boolean;
+  data: Evaluation[] | null; // Array de avaliações ou nulo.
+  loading: boolean; // Flag para indicar o estado de carregamento.
 }
 
+/**
+ * @component RawData
+ * @description Um componente que exibe uma lista de comentários gerais das avaliações.
+ * Cada item da lista mostra o ID da avaliação, a nota final e o texto do comentário.
+ */
 const RawData: React.FC<RawDataProps> = ({ data, loading }) => {
   return (
     <Paper sx={{ p: 2, mb: 2 }} elevation={3}>
@@ -42,6 +50,7 @@ const RawData: React.FC<RawDataProps> = ({ data, loading }) => {
                     }
                   />
                 </ListItem>
+                {/* Adiciona um divisor entre os itens, exceto no último. */}
                 {index < data.length - 1 && <Divider variant="inset" component="li" />}
               </React.Fragment>
             ))}

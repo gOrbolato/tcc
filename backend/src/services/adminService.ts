@@ -1,18 +1,24 @@
+// Importa a pool de conexões do banco de dados.
 import pool from '../config/database';
+// Importa o tipo RowDataPacket do mysql2 para tipar os resultados das queries.
 import { RowDataPacket } from 'mysql2';
+// Importa a função spawn do módulo child_process para executar comandos externos.
 import { spawn } from 'child_process';
 
+// Interface para os filtros de relatório.
 interface ReportFilters {
   institutionId?: string;
   courseId?: string;
 }
 
+// Interface para o resultado da análise do script Python.
 interface PythonAnalysisResult {
   averages_by_question: { [key: string]: number };
   suggestions: Array<{ type: string; category: string; score: number; sentiment: number; suggestion: string }>;
   analysis_by_question: { [key: string]: any };
 }
 
+// Interface para os dados de notificação.
 interface NotificationData extends RowDataPacket {
   id: number;
   usuario_id: number;
@@ -23,7 +29,13 @@ interface NotificationData extends RowDataPacket {
   ra: string; // Do usuário
 }
 
-export const getAdminReportData = async (filters: ReportFilters) => {
+/**
+ * @function getAdminReportData
+ * @description Busca dados para o relatório administrativo, incluindo análises de um script Python.
+ * @param {ReportFilters} filters - Os filtros para a busca de avaliações.
+ * @returns {Promise<any>} - Uma promessa que resolve para os dados do relatório.
+ */
+export const getAdminReportData = async (filters: ReportFilters): Promise<any> => {
   let query = `
     SELECT 
       a.* 
@@ -71,9 +83,9 @@ export const getAdminReportData = async (filters: ReportFilters) => {
     created_at: ev.created_at,
   }));
 
-  // Chamar o script Python para análise avançada
+  // Executa um script Python para análise avançada dos dados.
   const pythonAnalysis: PythonAnalysisResult = await new Promise((resolve, reject) => {
-    const pythonProcess = spawn('C:\\Users\\GuilhermeOrbolato\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', ['./python_scripts/analyze_evaluations.py'], {
+    const pythonProcess = spawn('python', ['./python_scripts/analyze_evaluations.py'], {
       cwd: __dirname + '/../../',
     });
 
@@ -97,7 +109,6 @@ export const getAdminReportData = async (filters: ReportFilters) => {
       }
     });
 
-    // Envia os dados das avaliações para o script Python via stdin
     pythonProcess.stdin.write(JSON.stringify(evaluations));
     pythonProcess.stdin.end();
   });
@@ -113,6 +124,11 @@ export const getAdminReportData = async (filters: ReportFilters) => {
   };
 };
 
+/**
+ * @function getPendingNotifications
+ * @description Busca e retorna as notificações não lidas.
+ * @returns {Promise<NotificationData[]>} - Uma promessa que resolve para um array de notificações.
+ */
 export const getPendingNotifications = async (): Promise<NotificationData[]> => {
   const [notifications] = await pool.query<NotificationData[]>(
     `SELECT 
@@ -126,7 +142,12 @@ export const getPendingNotifications = async (): Promise<NotificationData[]> => 
   return notifications;
 };
 
-export const generateReports = async () => {
+/**
+ * @function generateReports
+ * @description Gera relatórios a partir dos dados de avaliações, utilizando um script Python para análise.
+ * @returns {Promise<any>} - Uma promessa que resolve para os dados do relatório.
+ */
+export const generateReports = async (): Promise<any> => {
   const [evaluations] = await pool.query<RowDataPacket[]>(
     `SELECT
         a.nota_infraestrutura, a.obs_infraestrutura, a.nota_material_didatico,
@@ -136,7 +157,6 @@ export const generateReports = async () => {
     JOIN Cursos c ON a.curso_id = c.id`
   );
 
-  // Se não houver avaliações, retorna um objeto de relatório padrão imediatamente.
   if (evaluations.length === 0) {
     return {
       average_media_final: 0,
@@ -148,9 +168,8 @@ export const generateReports = async () => {
     };
   }
 
-  // Se houver avaliações, prossegue com a análise Python
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn('C:\\Users\\GuilhermeOrbolato\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', ['./python_scripts/analyze_evaluations.py'], {
+    const pythonProcess = spawn('python', ['./python_scripts/analyze_evaluations.py'], {
       cwd: __dirname + '/../../',
     });
 
@@ -179,12 +198,20 @@ export const generateReports = async () => {
   });
 };
 
+// Interface para os dados de perfil do administrador.
 interface AdminProfileData {
   nome?: string;
   email?: string;
 }
 
-export const updateAdminProfile = async (adminId: number, data: AdminProfileData) => {
+/**
+ * @function updateAdminProfile
+ * @description Atualiza o perfil de um administrador.
+ * @param {number} adminId - O ID do administrador a ser atualizado.
+ * @param {AdminProfileData} data - Os novos dados do perfil.
+ * @returns {Promise<any>} - Uma promessa que resolve para os dados do administrador atualizado.
+ */
+export const updateAdminProfile = async (adminId: number, data: AdminProfileData): Promise<any> => {
   if (!data.nome) {
     throw new Error('O nome é obrigatório.');
   }

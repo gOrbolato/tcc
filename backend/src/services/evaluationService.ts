@@ -1,6 +1,9 @@
+// Importa a pool de conexões do banco de dados.
 import pool from '../config/database';
+// Importa o tipo RowDataPacket do mysql2 para tipar os resultados das queries.
 import { RowDataPacket } from 'mysql2';
 
+// Interface para os filtros de busca de avaliações.
 interface EvaluationFilters {
   institutionId?: string;
   courseId?: string;
@@ -10,8 +13,15 @@ interface EvaluationFilters {
   anonymizedId?: string;
 }
 
-// Para o painel de admin
-export const getFilteredEvaluations = async (filters: EvaluationFilters) => {
+/**
+ * @function getFilteredEvaluations
+ * @description Busca e retorna uma lista de avaliações com base em filtros, para o painel de administrador.
+ * @param {EvaluationFilters} filters - Os filtros para a busca de avaliações.
+ * @returns {Promise<RowDataPacket[]>} - Uma promessa que resolve para um array de avaliações.
+ */
+export const getFilteredEvaluations = async (filters: EvaluationFilters): Promise<RowDataPacket[]> => {
+  // A query base seleciona os dados da avaliação e os nomes da instituição/curso e o RA/ID anônimo do usuário.
+  // Inclui um cálculo de distância opcional se a latitude e longitude forem fornecidas.
   let query = `
     SELECT 
       a.id, a.media_final, a.criado_em, 
@@ -34,6 +44,7 @@ export const getFilteredEvaluations = async (filters: EvaluationFilters) => {
   if (filters.institutionId) { query += ' AND a.instituicao_id = ?'; params.push(filters.institutionId); }
   if (filters.courseId) { query += ' AND a.curso_id = ?'; params.push(filters.courseId); }
   if (filters.anonymizedId) { query += ' AND u.anonymized_id = ?'; params.push(filters.anonymizedId); }
+  // A cláusula HAVING é usada para filtrar pela distância calculada.
   if (filters.latitude && filters.longitude && filters.radius) { query += ' HAVING distance < ?'; params.push(Number(filters.radius)); }
 
   query += ' ORDER BY a.criado_em DESC';
@@ -42,8 +53,13 @@ export const getFilteredEvaluations = async (filters: EvaluationFilters) => {
   return evaluations;
 };
 
-// Para o dashboard do usuário
-export const getEvaluationsByUserId = async (userId: number) => {
+/**
+ * @function getEvaluationsByUserId
+ * @description Busca e retorna todas as avaliações feitas por um usuário específico.
+ * @param {number} userId - O ID do usuário.
+ * @returns {Promise<RowDataPacket[]>} - Uma promessa que resolve para um array de avaliações do usuário.
+ */
+export const getEvaluationsByUserId = async (userId: number): Promise<RowDataPacket[]> => {
   const query = `
     SELECT 
       a.id, a.media_final, a.criado_em, 

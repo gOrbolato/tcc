@@ -1,25 +1,19 @@
+// Importa React, hooks e componentes de contexto e UI.
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import AuthLayout from '../../components/AuthLayout';
 import { motion } from 'framer-motion';
 
-// 1. Importar componentes do MUI
-import {
-  TextField,
-  Button,
-  FormControlLabel,
-  Checkbox,
-  Link,
-  Grid,
-  Box,
-  Typography,
-} from '@mui/material';
+// Importa componentes do Material-UI para o formulário.
+import { TextField, Button, FormControlLabel, Checkbox, Link, Box, Typography } from '@mui/material';
 
-// 2. Importar o Link do React Router para o MUI
-import { Link as RouterLink } from 'react-router-dom';
-
+/**
+ * @component Login
+ * @description A página de login da aplicação. Permite que usuários e administradores
+ * acessem suas contas.
+ */
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -27,18 +21,16 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
 
+  // Função para lidar com a submissão do formulário de login.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const userData = await login(email, senha);
       showNotification('Login realizado com sucesso!', 'success');
-      if (userData.isAdmin) {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      // Redireciona com base no papel do usuário (admin ou não).
+      navigate(userData.isAdmin ? '/admin/dashboard' : '/dashboard');
     } catch (error: any) {
-      // MODIFICADO: Checa o erro específico de conta trancada
+      // Trata o erro específico de conta trancada.
       if (error?.response?.status === 403 && error?.response?.data?.message === 'ACCOUNT_LOCKED') {
         showNotification('Sua conta está trancada. Por favor, reative seu acesso.', 'warning');
         navigate('/validar-codigo');
@@ -49,20 +41,12 @@ const Login: React.FC = () => {
   };
 
   return (
+    // Utiliza o layout padrão para páginas de autenticação.
     <AuthLayout title="Login">
-      {/* 3. Usar Box ao invés de <form> simples para ter acesso ao 'sx' prop */}
       <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
-        {/* 4. Substituir <div class="form-group">, <label> e <input> 
-             por um único <TextField> 
-        */}
+        {/* Campo de E-mail */}
         <TextField
           margin="normal"
-          InputLabelProps={{ style: { color: 'rgba(15,23,32,0.6)' } }}
-          inputProps={{
-            style: { color: 'rgba(15,23,32,0.95)' },
-            placeholder: 'endereco@exemplo.com'
-          }}
-          sx={{ '&& .MuiOutlinedInput-root': { background: 'rgba(244,246,248,0.9)', borderRadius: 3 }, '&& .MuiOutlinedInput-input': { color: 'rgba(15,23,32,0.95)' } }}
           required
           fullWidth
           id="email"
@@ -73,6 +57,7 @@ const Login: React.FC = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+        {/* Campo de Senha */}
         <TextField
           margin="normal"
           required
@@ -84,38 +69,24 @@ const Login: React.FC = () => {
           autoComplete="current-password"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
-          InputLabelProps={{ style: { color: 'rgba(15,23,32,0.6)' } }}
-          inputProps={{ style: { color: 'rgba(15,23,32,0.95)' } }}
-          sx={{ '&& .MuiOutlinedInput-root': { background: 'rgba(244,246,248,0.9)', borderRadius: 3 }, '&& .MuiOutlinedInput-input': { color: 'rgba(15,23,32,0.95)' } }}
         />
         
-        {/* 5. Substituir as opções de formulário */}
+        {/* Opções de "Lembrar-me" e "Esqueci minha senha". */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 1 }}>
-          <FormControlLabel
-            control={<Checkbox value="remember" color="primary" />}
-            label="Lembrar-me"
-          />
+          <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Lembrar-me" />
           <Link component={RouterLink} to="/recuperar-senha" variant="body2">
             Esqueci minha senha
           </Link>
         </Box>
         
-        {/* 6. Substituir <button> por <Button> */}
-        <motion.div
-          whileHover={{ scale: 1.02 }} // Efeito sutil ao passar o mouse
-          whileTap={{ scale: 0.98 }}   // Efeito ao clicar
-        >
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2, py: 1.5 }}
-          >
+        {/* Botão de Login com animação. */}
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2, py: 1.5 }}>
             Entrar
           </Button>
         </motion.div>
         
-        {/* 7. Substituir o redirecionamento */}
+        {/* Link para a página de registro. */}
         <Typography variant="body2" align="center">
           Não tem uma conta?{' '}
           <Link component={RouterLink} to="/registro" variant="body2">

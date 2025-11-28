@@ -1,29 +1,44 @@
+// Importa a função Router do Express para criar um novo objeto de roteador.
 import { Router } from 'express';
+// Importa os controladores de avaliação para lidar com as requisições.
 import { getEvaluations, getTemplate, getUserAvailable, getUserCompleted, getEvaluationStatus } from '../controllers/evaluationController';
-import { submitEvaluation, getEvaluationDetailsById } from '../controllers/userEvaluationController'; // Importa a nova função
+// Importa os controladores de avaliação do usuário.
+import { submitEvaluation, getEvaluationDetailsById } from '../controllers/userEvaluationController';
+// Importa o middleware de autenticação para proteger as rotas.
 import { authenticate } from '../middlewares/authMiddleware';
+// Importa o middleware de verificação de administrador.
 import { isAdmin } from '../middlewares/isAdmin';
 
+// Cria um novo objeto de roteador.
 const router = Router();
 
-// Rota para admin buscar avaliações com filtros
+// Rota para o administrador buscar avaliações com filtros.
+// Requer autenticação e privilégios de administrador.
 router.get('/', authenticate, isAdmin, getEvaluations);
 
-// Rota para usuário logado submeter uma nova avaliação
+// Rota para um usuário logado submeter uma nova avaliação.
+// Requer autenticação.
 router.post('/', authenticate, submitEvaluation);
 
-// Rota para usuário logado buscar os detalhes de uma avaliação específica
-// Rota para obter template de avaliação (usada para nova avaliação)
+// Rota para obter o template de avaliação (usado para criar uma nova avaliação).
+// Requer autenticação.
 router.get('/template', authenticate, getTemplate);
 
-// Rota para verificar o status de avaliação do usuário (cooldown)
+// Rota para verificar o status da avaliação de um usuário (cooldown).
+// Requer autenticação.
 router.get('/user/status', authenticate, getEvaluationStatus);
 
-// Backwards-compatible routes expected by older frontend code
+// Rota para obter as avaliações disponíveis para um usuário.
+// Mantida para compatibilidade com versões mais antigas do frontend.
 router.get('/user/available', authenticate, getUserAvailable);
+
+// Rota para obter as avaliações completadas por um usuário.
+// Mantida para compatibilidade com versões mais antigas do frontend.
 router.get('/user/completed', authenticate, getUserCompleted);
 
-// Rota para usuário logado buscar os detalhes de uma avaliação específica
+// Rota para um usuário logado buscar os detalhes de uma avaliação específica.
+// Requer autenticação.
 router.get('/:id', authenticate, getEvaluationDetailsById);
 
+// Exporta o roteador para ser usado na aplicação principal.
 export default router;

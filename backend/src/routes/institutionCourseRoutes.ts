@@ -1,5 +1,6 @@
+// Importa a função Router do Express para criar um novo objeto de roteador.
 import { Router } from 'express';
-// As funções corretas já estão sendo importadas aqui
+// Importa os controladores de instituição e curso para lidar com as requisições.
 import { 
     createInstitution, 
     getInstitutions, 
@@ -9,47 +10,59 @@ import {
     getCourses, 
     updateCourse, 
     deleteCourse,
-    getCoursesByInstitution, // Adicionando a função que faltava
+    getCoursesByInstitution,
     getInstitutionsNearby,
     mergeInstitution,
     mergeCourse
 } from '../controllers/institutionCourseController';
+// Importa o middleware de autenticação para proteger as rotas.
 import { authenticate } from '../middlewares/authMiddleware';
+// Importa o middleware de verificação de administrador.
 import { isAdmin } from '../middlewares/isAdmin';
 
+// Cria um novo objeto de roteador.
 const router = Router();
 
 // --- ROTAS PARA INSTITUIÇÕES ---
 
-// Rota pública para listar todas as instituições (usado no formulário de registro)
+// Rota pública para listar todas as instituições (usado no formulário de registro).
 router.get('/institutions', getInstitutions);
+
+// Rota pública para listar instituições próximas com base na latitude e longitude.
 router.get('/institutions/nearby', getInstitutionsNearby);
 
-// Rota pública para listar cursos de uma instituição específica (usado no formulário de registro)
+// Rota pública para listar cursos de uma instituição específica.
 router.get('/institutions/:id/courses', getCoursesByInstitution);
 
-// Rota para criar uma instituição. Pode ser pública para o registro ou protegida.
-// Para o caso de uso do registro, vamos deixar pública por enquanto.
+// Rota para criar uma nova instituição.
 router.post('/institutions', createInstitution);
 
-// Rotas de gerenciamento que exigem autenticação de admin
+// Rota para atualizar uma instituição. Requer autenticação de administrador.
 router.put('/institutions/:id', authenticate, isAdmin, updateInstitution);
+
+// Rota para deletar (desativar) uma instituição. Requer autenticação de administrador.
 router.delete('/institutions/:id', authenticate, isAdmin, deleteInstitution);
 
 
 // --- ROTAS PARA CURSOS ---
 
-// Rota para criar um curso (usado no registro)
+// Rota para criar um novo curso.
 router.post('/courses', createCourse);
 
-// Rota para obter todos os cursos (pública)
+// Rota pública para obter todos os cursos.
 router.get('/courses', getCourses);
 
-// Rotas de gerenciamento de curso para admins
+// Rota para atualizar um curso. Requer autenticação de administrador.
 router.put('/courses/:id', authenticate, isAdmin, updateCourse);
+
+// Rota para deletar (desativar) um curso. Requer autenticação de administrador.
 router.delete('/courses/:id', authenticate, isAdmin, deleteCourse);
+
+// Rota para mesclar duas instituições. Requer autenticação de administrador.
 router.post('/institutions/merge', authenticate, isAdmin, mergeInstitution);
+
+// Rota para mesclar dois cursos. Requer autenticação de administrador.
 router.post('/courses/merge', authenticate, isAdmin, mergeCourse);
 
-
+// Exporta o roteador para ser usado na aplicação principal.
 export default router;

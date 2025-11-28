@@ -1,15 +1,23 @@
-
+// Importa os tipos Request e Response do Express para lidar com as requisições e respostas HTTP.
 import { Request, Response } from 'express';
+// Importa o serviço de usuário para interagir com a lógica de negócio.
 import * as userService from '../services/userService';
+// Importa o serviço de ações do administrador para registrar logs de auditoria.
 import * as adminActionsService from '../services/adminActionsService';
 
-// Interface para adicionar o objeto 'user' que vem do middleware de autenticação
+// Define uma interface para requisições autenticadas, que podem conter informações do usuário.
 interface AuthenticatedRequest extends Request {
   user?: { id: number; isAdmin?: boolean; };
 }
 
-// Função para admin atualizar um usuário
-export const updateUserAsAdmin = async (req: Request, res: Response) => {
+/**
+ * @function updateUserAsAdmin
+ * @description Atualiza os dados de um usuário pelo administrador.
+ * @param {Request} req - O objeto de requisição do Express.
+ * @param {Response} res - O objeto de resposta do Express.
+ * @returns {Promise<void>}
+ */
+export const updateUserAsAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = Number(req.params.id);
     const { instituicao_id, curso_id, is_active } = req.body;
@@ -19,6 +27,7 @@ export const updateUserAsAdmin = async (req: Request, res: Response) => {
     if (curso_id !== undefined) dataToUpdate.curso_id = curso_id;
     if (is_active !== undefined) dataToUpdate.is_active = is_active;
 
+    // Chama o serviço para atualizar os detalhes do usuário.
     const updatedUser = await userService.updateUserDetails(userId, dataToUpdate);
     res.status(200).json({ message: 'Usuário atualizado com sucesso!', user: updatedUser });
   } catch (error: any) {
@@ -26,47 +35,60 @@ export const updateUserAsAdmin = async (req: Request, res: Response) => {
   }
 };
 
-// --- FUNÇÕES ADICIONADAS PARA CORRIGIR O ERRO ---
-
-// Função para o próprio usuário buscar seu perfil
-export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @function getProfile
+ * @description Busca e retorna o perfil do usuário autenticado (seja ele admin ou usuário comum).
+ * @param {AuthenticatedRequest} req - O objeto de requisição autenticada do Express.
+ * @param {Response} res - O objeto de resposta do Express.
+ * @returns {Promise<Response>}
+ */
+export const getProfile = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Não autorizado.' });
     }
-    console.log("DEBUG userController: Buscando perfil para userId:", req.user.id, "isAdmin:", req.user.isAdmin);
+    
     let userProfile;
+    // Se for administrador, busca o perfil de admin, senão, de usuário.
     if (req.user.isAdmin) {
       userProfile = await userService.getAdminById(req.user.id);
     } else {
       userProfile = await userService.getUserById(req.user.id);
     }
-    res.status(200).json(userProfile);
+    return res.status(200).json(userProfile);
   } catch (error: any) {
     console.error("ERRO userController: Erro ao buscar perfil:", error);
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: error.message });
   }
 };
 
-// Função para o próprio usuário atualizar seu perfil
-export const updateProfile = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @function updateProfile
+ * @description Atualiza o perfil do usuário autenticado.
+ * @param {AuthenticatedRequest} req - O objeto de requisição autenticada do Express.
+ * @param {Response} res - O objeto de resposta do Express.
+ * @returns {Promise<Response>}
+ */
+export const updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Não autorizado.' });
     }
-    // If admin is updating their own profile (or someone else's), capture previous data for audit
+
     let previousData = null;
+    // Se for admin, busca os dados anteriores para auditoria.
     if (req.user.isAdmin) {
       try {
         previousData = await userService.getUserById(req.user.id);
       } catch (e) {
-        // ignore if cannot fetch
+        // Ignora se não conseguir buscar os dados anteriores.
       }
     }
 
+    // Chama o serviço para atualizar o perfil do usuário.
     const updatedProfile = await userService.updateUserProfile(req.user.id, req.body, { allowAdminOverride: !!req.user.isAdmin });
 
-    // Log admin action if admin
+    // Se for admin, registra a ação de atualização.
     if (req.user.isAdmin) {
       const changes: any = {};
       if (previousData) {
@@ -80,53 +102,77 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
       }
       await adminActionsService.logAdminAction(req.user.id, 'update_profile', req.user.id, { changes, ip: req.ip });
     }
-    res.status(200).json({ message: 'Perfil atualizado com sucesso!', user: updatedProfile });
+    return res.status(200).json({ message: 'Perfil atualizado com sucesso!', user: updatedProfile });
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: error.message });
   }
 };
 
-export const changePassword = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @function changePassword
+ * @description Altera a senha do usuário.
+ * @param {AuthenticatedRequest} req - O objeto de requisição autenticada do Express.
+ * @param {Response} res - O objeto de resposta do Express.
+ * @returns {Promise<Response>}
+ */
+export const changePassword = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Não autorizado.' });
     const { senhaAntiga, novaSenha, targetUserId } = req.body;
     const targetId = targetUserId ? Number(targetUserId) : req.user.id;
     if (!novaSenha) return res.status(400).json({ message: 'Nova senha é obrigatória.' });
+
+    // Se for admin alterando a senha de outro usuário.
     if (req.user.isAdmin && targetUserId) {
-      // admin changing someone else's password (or own without old password)
       await userService.adminChangePassword(targetId, novaSenha);
     } else {
-      // regular flow: must provide old password
+      // Fluxo normal de alteração de senha.
       if (!senhaAntiga) return res.status(400).json({ message: 'Senha antiga é obrigatória.' });
       await userService.changePassword(targetId, senhaAntiga, novaSenha);
     }
-    res.status(200).json({ message: 'Senha alterada com sucesso.' });
+    return res.status(200).json({ message: 'Senha alterada com sucesso.' });
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: error.message });
   }
 };
 
-export const trancarCurso = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @function trancarCurso
+ * @description Tranca o curso do usuário autenticado.
+ * @param {AuthenticatedRequest} req - O objeto de requisição autenticada do Express.
+ * @param {Response} res - O objeto de resposta do Express.
+ * @returns {Promise<Response>}
+ */
+export const trancarCurso = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Não autorizado.' });
     const { motivo } = req.body;
     if (!motivo) {
       return res.status(400).json({ message: 'O motivo do trancamento é obrigatório.' });
     }
+    // Chama o serviço para trancar o curso.
     const updated = await userService.trancarCurso(req.user.id, motivo);
-    res.status(200).json({ message: 'Curso trancado com sucesso.', user: updated });
+    return res.status(200).json({ message: 'Curso trancado com sucesso.', user: updated });
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: error.message });
   }
 };
 
-export const requestDesbloqueio = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @function requestDesbloqueio
+ * @description Cria uma solicitação de desbloqueio de conta.
+ * @param {AuthenticatedRequest} req - O objeto de requisição autenticada do Express.
+ * @param {Response} res - O objeto de resposta do Express.
+ * @returns {Promise<Response>}
+ */
+export const requestDesbloqueio = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Não autorizado.' });
     const { motivo } = req.body;
+    // Chama o serviço para solicitar o desbloqueio.
     const result = await userService.requestDesbloqueio(req.user.id, motivo);
-    res.status(201).json({ message: 'Pedido de desbloqueio criado.', request: result });
+    return res.status(201).json({ message: 'Pedido de desbloqueio criado.', request: result });
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: error.message });
   }
 };
